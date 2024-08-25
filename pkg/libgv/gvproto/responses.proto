@@ -4,6 +4,7 @@ option go_package = "../gvproto";
 
 import "threads.proto";
 import "account.proto";
+import "contacts.proto";
 
 message RespGetThread {
     threads.Thread thread = 1;
@@ -35,4 +36,43 @@ message RespGetAccount {
 
 message RespDeleteThread {
 
+}
+
+message RespAutocompleteContacts {
+    message AffinityResponseContext {
+        message Feature {
+            enum Type {
+                UNKNOWN_TYPE = 0;
+                IS_CONTACT_STARRED = 6;
+                HAS_POSTAL_ADDRESS = 7;
+                HAS_NICKNAME = 8;
+                HAS_AVATAR = 11;
+                NUM_RAW_CONTACTS = 16;
+            }
+
+            Type type = 1;
+            double weight = 2;
+            double exponent = 3;
+        }
+        int32 affinityVersion = 1;
+        repeated Feature features = 3;
+    }
+
+    repeated contacts.PersonWrapper results = 1;
+    AffinityResponseContext affinityResponseContext = 2;
+}
+
+message RespLookupContacts {
+    message Match {
+        enum FailureType {
+            NO_FAILURE = 0;
+            PERMANENT = 1;
+        }
+
+        contacts.ContactID ID = 1;
+        contacts.PersonWrapper autocompletion = 2;
+        FailureType failureType = 3;
+    }
+
+    repeated Match matches = 1;
 }

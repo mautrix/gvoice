@@ -55,9 +55,13 @@ func (c *Client) prepareHeaders(req *http.Request) {
 		req.Header.Set("X-Requested-With", "XMLHttpRequest")
 		req.Header.Set("X-Goog-Encode-Response-If-Executable", "base64")
 	}
+	if req.URL.Host == ContactsDomain {
+		req.Header.Set("X-Goog-Api-Key", APIKey)
+		req.Header.Set("X-Goog-Encode-Response-If-Executable", "base64")
+	}
 	req.Header.Set("Sec-Fetch-Dest", "empty")
 	req.Header.Set("Sec-Fetch-Mode", "cors")
-	if req.URL.Host == RealtimeDomain {
+	if req.URL.Host == RealtimeDomain || req.URL.Host == ContactsDomain {
 		req.Header.Set("Sec-Fetch-Site", "same-site")
 	} else {
 		req.Header.Set("Sec-Fetch-Site", "same-origin")
@@ -112,7 +116,7 @@ func (c *Client) MakeRequest(ctx context.Context, method, baseAddr string, query
 			query = make(url.Values)
 		}
 		query.Set("key", APIKey)
-		if parsedAddr.Host == APIDomain {
+		if parsedAddr.Host == APIDomain || parsedAddr.Host == ContactsDomain {
 			query.Set("alt", "proto")
 		}
 	}

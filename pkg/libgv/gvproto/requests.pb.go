@@ -571,6 +571,140 @@ func (x *ReqDeleteThread) GetThreadID() string {
 	return ""
 }
 
+type ReqAutocompleteContacts struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	UnknownInt1  int32   `protobuf:"varint,1,opt,name=unknownInt1,proto3" json:"unknownInt1,omitempty"` // 243
+	Query        string  `protobuf:"bytes,2,opt,name=query,proto3" json:"query,omitempty"`
+	UnknownInts3 []int32 `protobuf:"varint,3,rep,packed,name=unknownInts3,proto3" json:"unknownInts3,omitempty"` // 1,2
+	MaxResults   int32   `protobuf:"varint,4,opt,name=maxResults,proto3" json:"maxResults,omitempty"`            // 15 or 500
+}
+
+func (x *ReqAutocompleteContacts) Reset() {
+	*x = ReqAutocompleteContacts{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_requests_proto_msgTypes[8]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ReqAutocompleteContacts) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReqAutocompleteContacts) ProtoMessage() {}
+
+func (x *ReqAutocompleteContacts) ProtoReflect() protoreflect.Message {
+	mi := &file_requests_proto_msgTypes[8]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReqAutocompleteContacts.ProtoReflect.Descriptor instead.
+func (*ReqAutocompleteContacts) Descriptor() ([]byte, []int) {
+	return file_requests_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ReqAutocompleteContacts) GetUnknownInt1() int32 {
+	if x != nil {
+		return x.UnknownInt1
+	}
+	return 0
+}
+
+func (x *ReqAutocompleteContacts) GetQuery() string {
+	if x != nil {
+		return x.Query
+	}
+	return ""
+}
+
+func (x *ReqAutocompleteContacts) GetUnknownInts3() []int32 {
+	if x != nil {
+		return x.UnknownInts3
+	}
+	return nil
+}
+
+func (x *ReqAutocompleteContacts) GetMaxResults() int32 {
+	if x != nil {
+		return x.MaxResults
+	}
+	return 0
+}
+
+type ReqLookupContacts struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	UnknownInt1  int32        `protobuf:"varint,1,opt,name=unknownInt1,proto3" json:"unknownInt1,omitempty"`          // 243
+	UnknownInts2 []int32      `protobuf:"varint,2,rep,packed,name=unknownInts2,proto3" json:"unknownInts2,omitempty"` // 1,2
+	Targets      []*ContactID `protobuf:"bytes,3,rep,name=targets,proto3" json:"targets,omitempty"`
+}
+
+func (x *ReqLookupContacts) Reset() {
+	*x = ReqLookupContacts{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_requests_proto_msgTypes[9]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ReqLookupContacts) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReqLookupContacts) ProtoMessage() {}
+
+func (x *ReqLookupContacts) ProtoReflect() protoreflect.Message {
+	mi := &file_requests_proto_msgTypes[9]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReqLookupContacts.ProtoReflect.Descriptor instead.
+func (*ReqLookupContacts) Descriptor() ([]byte, []int) {
+	return file_requests_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *ReqLookupContacts) GetUnknownInt1() int32 {
+	if x != nil {
+		return x.UnknownInt1
+	}
+	return 0
+}
+
+func (x *ReqLookupContacts) GetUnknownInts2() []int32 {
+	if x != nil {
+		return x.UnknownInts2
+	}
+	return nil
+}
+
+func (x *ReqLookupContacts) GetTargets() []*ContactID {
+	if x != nil {
+		return x.Targets
+	}
+	return nil
+}
+
 type ReqSendSMS_WrappedTxnID struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -582,7 +716,7 @@ type ReqSendSMS_WrappedTxnID struct {
 func (x *ReqSendSMS_WrappedTxnID) Reset() {
 	*x = ReqSendSMS_WrappedTxnID{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_requests_proto_msgTypes[8]
+		mi := &file_requests_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -595,7 +729,7 @@ func (x *ReqSendSMS_WrappedTxnID) String() string {
 func (*ReqSendSMS_WrappedTxnID) ProtoMessage() {}
 
 func (x *ReqSendSMS_WrappedTxnID) ProtoReflect() protoreflect.Message {
-	mi := &file_requests_proto_msgTypes[8]
+	mi := &file_requests_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -629,7 +763,7 @@ type ReqSendSMS_TrackingData struct {
 func (x *ReqSendSMS_TrackingData) Reset() {
 	*x = ReqSendSMS_TrackingData{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_requests_proto_msgTypes[9]
+		mi := &file_requests_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -642,7 +776,7 @@ func (x *ReqSendSMS_TrackingData) String() string {
 func (*ReqSendSMS_TrackingData) ProtoMessage() {}
 
 func (x *ReqSendSMS_TrackingData) ProtoReflect() protoreflect.Message {
-	mi := &file_requests_proto_msgTypes[9]
+	mi := &file_requests_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -677,7 +811,7 @@ type ReqSendSMS_Media struct {
 func (x *ReqSendSMS_Media) Reset() {
 	*x = ReqSendSMS_Media{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_requests_proto_msgTypes[10]
+		mi := &file_requests_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -690,7 +824,7 @@ func (x *ReqSendSMS_Media) String() string {
 func (*ReqSendSMS_Media) ProtoMessage() {}
 
 func (x *ReqSendSMS_Media) ProtoReflect() protoreflect.Message {
-	mi := &file_requests_proto_msgTypes[10]
+	mi := &file_requests_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -738,7 +872,7 @@ func file_requests_proto_rawDescGZIP() []byte {
 }
 
 var file_requests_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_requests_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_requests_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_requests_proto_goTypes = []any{
 	(ReqSendSMS_Media_Type)(0),      // 0: requests.ReqSendSMS.Media.Type
 	(*ReqGetAccount)(nil),           // 1: requests.ReqGetAccount
@@ -749,27 +883,31 @@ var file_requests_proto_goTypes = []any{
 	(*ReqGetThreadingInfo)(nil),     // 6: requests.ReqGetThreadingInfo
 	(*ReqUpdateAttributes)(nil),     // 7: requests.ReqUpdateAttributes
 	(*ReqDeleteThread)(nil),         // 8: requests.ReqDeleteThread
-	(*ReqSendSMS_WrappedTxnID)(nil), // 9: requests.ReqSendSMS.WrappedTxnID
-	(*ReqSendSMS_TrackingData)(nil), // 10: requests.ReqSendSMS.TrackingData
-	(*ReqSendSMS_Media)(nil),        // 11: requests.ReqSendSMS.Media
-	(ThreadFolder)(0),               // 12: threads.ThreadFolder
-	(*ThreadAttributes)(nil),        // 13: threads.ThreadAttributes
+	(*ReqAutocompleteContacts)(nil), // 9: requests.ReqAutocompleteContacts
+	(*ReqLookupContacts)(nil),       // 10: requests.ReqLookupContacts
+	(*ReqSendSMS_WrappedTxnID)(nil), // 11: requests.ReqSendSMS.WrappedTxnID
+	(*ReqSendSMS_TrackingData)(nil), // 12: requests.ReqSendSMS.TrackingData
+	(*ReqSendSMS_Media)(nil),        // 13: requests.ReqSendSMS.Media
+	(ThreadFolder)(0),               // 14: threads.ThreadFolder
+	(*ThreadAttributes)(nil),        // 15: threads.ThreadAttributes
+	(*ContactID)(nil),               // 16: contacts.ContactID
 }
 var file_requests_proto_depIdxs = []int32{
-	9,  // 0: requests.ReqSendSMS.transactionID:type_name -> requests.ReqSendSMS.WrappedTxnID
-	11, // 1: requests.ReqSendSMS.media:type_name -> requests.ReqSendSMS.Media
-	10, // 2: requests.ReqSendSMS.trackingData:type_name -> requests.ReqSendSMS.TrackingData
-	12, // 3: requests.ReqListThreads.folder:type_name -> threads.ThreadFolder
+	11, // 0: requests.ReqSendSMS.transactionID:type_name -> requests.ReqSendSMS.WrappedTxnID
+	13, // 1: requests.ReqSendSMS.media:type_name -> requests.ReqSendSMS.Media
+	12, // 2: requests.ReqSendSMS.trackingData:type_name -> requests.ReqSendSMS.TrackingData
+	14, // 3: requests.ReqListThreads.folder:type_name -> threads.ThreadFolder
 	3,  // 4: requests.ReqListThreads.unknownWrapper:type_name -> requests.UnknownWrapper
 	3,  // 5: requests.ReqGetThread.unknownWrapper:type_name -> requests.UnknownWrapper
-	13, // 6: requests.ReqUpdateAttributes.attributes:type_name -> threads.ThreadAttributes
-	13, // 7: requests.ReqUpdateAttributes.otherAttributes:type_name -> threads.ThreadAttributes
-	0,  // 8: requests.ReqSendSMS.Media.type:type_name -> requests.ReqSendSMS.Media.Type
-	9,  // [9:9] is the sub-list for method output_type
-	9,  // [9:9] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	15, // 6: requests.ReqUpdateAttributes.attributes:type_name -> threads.ThreadAttributes
+	15, // 7: requests.ReqUpdateAttributes.otherAttributes:type_name -> threads.ThreadAttributes
+	16, // 8: requests.ReqLookupContacts.targets:type_name -> contacts.ContactID
+	0,  // 9: requests.ReqSendSMS.Media.type:type_name -> requests.ReqSendSMS.Media.Type
+	10, // [10:10] is the sub-list for method output_type
+	10, // [10:10] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_requests_proto_init() }
@@ -778,6 +916,7 @@ func file_requests_proto_init() {
 		return
 	}
 	file_threads_proto_init()
+	file_contacts_proto_init()
 	if !protoimpl.UnsafeEnabled {
 		file_requests_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*ReqGetAccount); i {
@@ -876,7 +1015,7 @@ func file_requests_proto_init() {
 			}
 		}
 		file_requests_proto_msgTypes[8].Exporter = func(v any, i int) any {
-			switch v := v.(*ReqSendSMS_WrappedTxnID); i {
+			switch v := v.(*ReqAutocompleteContacts); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -888,7 +1027,7 @@ func file_requests_proto_init() {
 			}
 		}
 		file_requests_proto_msgTypes[9].Exporter = func(v any, i int) any {
-			switch v := v.(*ReqSendSMS_TrackingData); i {
+			switch v := v.(*ReqLookupContacts); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -900,6 +1039,30 @@ func file_requests_proto_init() {
 			}
 		}
 		file_requests_proto_msgTypes[10].Exporter = func(v any, i int) any {
+			switch v := v.(*ReqSendSMS_WrappedTxnID); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_requests_proto_msgTypes[11].Exporter = func(v any, i int) any {
+			switch v := v.(*ReqSendSMS_TrackingData); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_requests_proto_msgTypes[12].Exporter = func(v any, i int) any {
 			switch v := v.(*ReqSendSMS_Media); i {
 			case 0:
 				return &v.state
@@ -918,7 +1081,7 @@ func file_requests_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_requests_proto_rawDesc,
 			NumEnums:      1,
-			NumMessages:   11,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -23,6 +23,110 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type RespAutocompleteContacts_AffinityResponseContext_Feature_Type int32
+
+const (
+	RespAutocompleteContacts_AffinityResponseContext_Feature_UNKNOWN_TYPE       RespAutocompleteContacts_AffinityResponseContext_Feature_Type = 0
+	RespAutocompleteContacts_AffinityResponseContext_Feature_IS_CONTACT_STARRED RespAutocompleteContacts_AffinityResponseContext_Feature_Type = 6
+	RespAutocompleteContacts_AffinityResponseContext_Feature_HAS_POSTAL_ADDRESS RespAutocompleteContacts_AffinityResponseContext_Feature_Type = 7
+	RespAutocompleteContacts_AffinityResponseContext_Feature_HAS_NICKNAME       RespAutocompleteContacts_AffinityResponseContext_Feature_Type = 8
+	RespAutocompleteContacts_AffinityResponseContext_Feature_HAS_AVATAR         RespAutocompleteContacts_AffinityResponseContext_Feature_Type = 11
+	RespAutocompleteContacts_AffinityResponseContext_Feature_NUM_RAW_CONTACTS   RespAutocompleteContacts_AffinityResponseContext_Feature_Type = 16
+)
+
+// Enum value maps for RespAutocompleteContacts_AffinityResponseContext_Feature_Type.
+var (
+	RespAutocompleteContacts_AffinityResponseContext_Feature_Type_name = map[int32]string{
+		0:  "UNKNOWN_TYPE",
+		6:  "IS_CONTACT_STARRED",
+		7:  "HAS_POSTAL_ADDRESS",
+		8:  "HAS_NICKNAME",
+		11: "HAS_AVATAR",
+		16: "NUM_RAW_CONTACTS",
+	}
+	RespAutocompleteContacts_AffinityResponseContext_Feature_Type_value = map[string]int32{
+		"UNKNOWN_TYPE":       0,
+		"IS_CONTACT_STARRED": 6,
+		"HAS_POSTAL_ADDRESS": 7,
+		"HAS_NICKNAME":       8,
+		"HAS_AVATAR":         11,
+		"NUM_RAW_CONTACTS":   16,
+	}
+)
+
+func (x RespAutocompleteContacts_AffinityResponseContext_Feature_Type) Enum() *RespAutocompleteContacts_AffinityResponseContext_Feature_Type {
+	p := new(RespAutocompleteContacts_AffinityResponseContext_Feature_Type)
+	*p = x
+	return p
+}
+
+func (x RespAutocompleteContacts_AffinityResponseContext_Feature_Type) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RespAutocompleteContacts_AffinityResponseContext_Feature_Type) Descriptor() protoreflect.EnumDescriptor {
+	return file_responses_proto_enumTypes[0].Descriptor()
+}
+
+func (RespAutocompleteContacts_AffinityResponseContext_Feature_Type) Type() protoreflect.EnumType {
+	return &file_responses_proto_enumTypes[0]
+}
+
+func (x RespAutocompleteContacts_AffinityResponseContext_Feature_Type) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use RespAutocompleteContacts_AffinityResponseContext_Feature_Type.Descriptor instead.
+func (RespAutocompleteContacts_AffinityResponseContext_Feature_Type) EnumDescriptor() ([]byte, []int) {
+	return file_responses_proto_rawDescGZIP(), []int{7, 0, 0, 0}
+}
+
+type RespLookupContacts_Match_FailureType int32
+
+const (
+	RespLookupContacts_Match_NO_FAILURE RespLookupContacts_Match_FailureType = 0
+	RespLookupContacts_Match_PERMANENT  RespLookupContacts_Match_FailureType = 1
+)
+
+// Enum value maps for RespLookupContacts_Match_FailureType.
+var (
+	RespLookupContacts_Match_FailureType_name = map[int32]string{
+		0: "NO_FAILURE",
+		1: "PERMANENT",
+	}
+	RespLookupContacts_Match_FailureType_value = map[string]int32{
+		"NO_FAILURE": 0,
+		"PERMANENT":  1,
+	}
+)
+
+func (x RespLookupContacts_Match_FailureType) Enum() *RespLookupContacts_Match_FailureType {
+	p := new(RespLookupContacts_Match_FailureType)
+	*p = x
+	return p
+}
+
+func (x RespLookupContacts_Match_FailureType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RespLookupContacts_Match_FailureType) Descriptor() protoreflect.EnumDescriptor {
+	return file_responses_proto_enumTypes[1].Descriptor()
+}
+
+func (RespLookupContacts_Match_FailureType) Type() protoreflect.EnumType {
+	return &file_responses_proto_enumTypes[1]
+}
+
+func (x RespLookupContacts_Match_FailureType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use RespLookupContacts_Match_FailureType.Descriptor instead.
+func (RespLookupContacts_Match_FailureType) EnumDescriptor() ([]byte, []int) {
+	return file_responses_proto_rawDescGZIP(), []int{8, 0, 0}
+}
+
 type RespGetThread struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -375,6 +479,289 @@ func (*RespDeleteThread) Descriptor() ([]byte, []int) {
 	return file_responses_proto_rawDescGZIP(), []int{6}
 }
 
+type RespAutocompleteContacts struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Results                 []*PersonWrapper                                  `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
+	AffinityResponseContext *RespAutocompleteContacts_AffinityResponseContext `protobuf:"bytes,2,opt,name=affinityResponseContext,proto3" json:"affinityResponseContext,omitempty"`
+}
+
+func (x *RespAutocompleteContacts) Reset() {
+	*x = RespAutocompleteContacts{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_responses_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *RespAutocompleteContacts) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RespAutocompleteContacts) ProtoMessage() {}
+
+func (x *RespAutocompleteContacts) ProtoReflect() protoreflect.Message {
+	mi := &file_responses_proto_msgTypes[7]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RespAutocompleteContacts.ProtoReflect.Descriptor instead.
+func (*RespAutocompleteContacts) Descriptor() ([]byte, []int) {
+	return file_responses_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *RespAutocompleteContacts) GetResults() []*PersonWrapper {
+	if x != nil {
+		return x.Results
+	}
+	return nil
+}
+
+func (x *RespAutocompleteContacts) GetAffinityResponseContext() *RespAutocompleteContacts_AffinityResponseContext {
+	if x != nil {
+		return x.AffinityResponseContext
+	}
+	return nil
+}
+
+type RespLookupContacts struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Matches []*RespLookupContacts_Match `protobuf:"bytes,1,rep,name=matches,proto3" json:"matches,omitempty"`
+}
+
+func (x *RespLookupContacts) Reset() {
+	*x = RespLookupContacts{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_responses_proto_msgTypes[8]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *RespLookupContacts) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RespLookupContacts) ProtoMessage() {}
+
+func (x *RespLookupContacts) ProtoReflect() protoreflect.Message {
+	mi := &file_responses_proto_msgTypes[8]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RespLookupContacts.ProtoReflect.Descriptor instead.
+func (*RespLookupContacts) Descriptor() ([]byte, []int) {
+	return file_responses_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *RespLookupContacts) GetMatches() []*RespLookupContacts_Match {
+	if x != nil {
+		return x.Matches
+	}
+	return nil
+}
+
+type RespAutocompleteContacts_AffinityResponseContext struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	AffinityVersion int32                                                       `protobuf:"varint,1,opt,name=affinityVersion,proto3" json:"affinityVersion,omitempty"`
+	Features        []*RespAutocompleteContacts_AffinityResponseContext_Feature `protobuf:"bytes,3,rep,name=features,proto3" json:"features,omitempty"`
+}
+
+func (x *RespAutocompleteContacts_AffinityResponseContext) Reset() {
+	*x = RespAutocompleteContacts_AffinityResponseContext{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_responses_proto_msgTypes[9]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *RespAutocompleteContacts_AffinityResponseContext) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RespAutocompleteContacts_AffinityResponseContext) ProtoMessage() {}
+
+func (x *RespAutocompleteContacts_AffinityResponseContext) ProtoReflect() protoreflect.Message {
+	mi := &file_responses_proto_msgTypes[9]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RespAutocompleteContacts_AffinityResponseContext.ProtoReflect.Descriptor instead.
+func (*RespAutocompleteContacts_AffinityResponseContext) Descriptor() ([]byte, []int) {
+	return file_responses_proto_rawDescGZIP(), []int{7, 0}
+}
+
+func (x *RespAutocompleteContacts_AffinityResponseContext) GetAffinityVersion() int32 {
+	if x != nil {
+		return x.AffinityVersion
+	}
+	return 0
+}
+
+func (x *RespAutocompleteContacts_AffinityResponseContext) GetFeatures() []*RespAutocompleteContacts_AffinityResponseContext_Feature {
+	if x != nil {
+		return x.Features
+	}
+	return nil
+}
+
+type RespAutocompleteContacts_AffinityResponseContext_Feature struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Type     RespAutocompleteContacts_AffinityResponseContext_Feature_Type `protobuf:"varint,1,opt,name=type,proto3,enum=responses.RespAutocompleteContacts_AffinityResponseContext_Feature_Type" json:"type,omitempty"`
+	Weight   float64                                                       `protobuf:"fixed64,2,opt,name=weight,proto3" json:"weight,omitempty"`
+	Exponent float64                                                       `protobuf:"fixed64,3,opt,name=exponent,proto3" json:"exponent,omitempty"`
+}
+
+func (x *RespAutocompleteContacts_AffinityResponseContext_Feature) Reset() {
+	*x = RespAutocompleteContacts_AffinityResponseContext_Feature{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_responses_proto_msgTypes[10]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *RespAutocompleteContacts_AffinityResponseContext_Feature) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RespAutocompleteContacts_AffinityResponseContext_Feature) ProtoMessage() {}
+
+func (x *RespAutocompleteContacts_AffinityResponseContext_Feature) ProtoReflect() protoreflect.Message {
+	mi := &file_responses_proto_msgTypes[10]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RespAutocompleteContacts_AffinityResponseContext_Feature.ProtoReflect.Descriptor instead.
+func (*RespAutocompleteContacts_AffinityResponseContext_Feature) Descriptor() ([]byte, []int) {
+	return file_responses_proto_rawDescGZIP(), []int{7, 0, 0}
+}
+
+func (x *RespAutocompleteContacts_AffinityResponseContext_Feature) GetType() RespAutocompleteContacts_AffinityResponseContext_Feature_Type {
+	if x != nil {
+		return x.Type
+	}
+	return RespAutocompleteContacts_AffinityResponseContext_Feature_UNKNOWN_TYPE
+}
+
+func (x *RespAutocompleteContacts_AffinityResponseContext_Feature) GetWeight() float64 {
+	if x != nil {
+		return x.Weight
+	}
+	return 0
+}
+
+func (x *RespAutocompleteContacts_AffinityResponseContext_Feature) GetExponent() float64 {
+	if x != nil {
+		return x.Exponent
+	}
+	return 0
+}
+
+type RespLookupContacts_Match struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	ID             *ContactID                           `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
+	Autocompletion *PersonWrapper                       `protobuf:"bytes,2,opt,name=autocompletion,proto3" json:"autocompletion,omitempty"`
+	FailureType    RespLookupContacts_Match_FailureType `protobuf:"varint,3,opt,name=failureType,proto3,enum=responses.RespLookupContacts_Match_FailureType" json:"failureType,omitempty"`
+}
+
+func (x *RespLookupContacts_Match) Reset() {
+	*x = RespLookupContacts_Match{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_responses_proto_msgTypes[11]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *RespLookupContacts_Match) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RespLookupContacts_Match) ProtoMessage() {}
+
+func (x *RespLookupContacts_Match) ProtoReflect() protoreflect.Message {
+	mi := &file_responses_proto_msgTypes[11]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RespLookupContacts_Match.ProtoReflect.Descriptor instead.
+func (*RespLookupContacts_Match) Descriptor() ([]byte, []int) {
+	return file_responses_proto_rawDescGZIP(), []int{8, 0}
+}
+
+func (x *RespLookupContacts_Match) GetID() *ContactID {
+	if x != nil {
+		return x.ID
+	}
+	return nil
+}
+
+func (x *RespLookupContacts_Match) GetAutocompletion() *PersonWrapper {
+	if x != nil {
+		return x.Autocompletion
+	}
+	return nil
+}
+
+func (x *RespLookupContacts_Match) GetFailureType() RespLookupContacts_Match_FailureType {
+	if x != nil {
+		return x.FailureType
+	}
+	return RespLookupContacts_Match_NO_FAILURE
+}
+
 var File_responses_proto protoreflect.FileDescriptor
 
 //go:embed responses.pb.raw
@@ -392,32 +779,50 @@ func file_responses_proto_rawDescGZIP() []byte {
 	return file_responses_proto_rawDescData
 }
 
-var file_responses_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_responses_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_responses_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_responses_proto_goTypes = []any{
-	(*RespGetThread)(nil),             // 0: responses.RespGetThread
-	(*RespListThreads)(nil),           // 1: responses.RespListThreads
-	(*RespSendSMS)(nil),               // 2: responses.RespSendSMS
-	(*RespUpdateAttributes)(nil),      // 3: responses.RespUpdateAttributes
-	(*RespBatchUpdateAttributes)(nil), // 4: responses.RespBatchUpdateAttributes
-	(*RespGetAccount)(nil),            // 5: responses.RespGetAccount
-	(*RespDeleteThread)(nil),          // 6: responses.RespDeleteThread
-	(*Thread)(nil),                    // 7: threads.Thread
-	(ThreadFolder)(0),                 // 8: threads.ThreadFolder
-	(*ThreadAttributes)(nil),          // 9: threads.ThreadAttributes
-	(*Account)(nil),                   // 10: account.Account
+	(RespAutocompleteContacts_AffinityResponseContext_Feature_Type)(0), // 0: responses.RespAutocompleteContacts.AffinityResponseContext.Feature.Type
+	(RespLookupContacts_Match_FailureType)(0),                          // 1: responses.RespLookupContacts.Match.FailureType
+	(*RespGetThread)(nil),                                              // 2: responses.RespGetThread
+	(*RespListThreads)(nil),                                            // 3: responses.RespListThreads
+	(*RespSendSMS)(nil),                                                // 4: responses.RespSendSMS
+	(*RespUpdateAttributes)(nil),                                       // 5: responses.RespUpdateAttributes
+	(*RespBatchUpdateAttributes)(nil),                                  // 6: responses.RespBatchUpdateAttributes
+	(*RespGetAccount)(nil),                                             // 7: responses.RespGetAccount
+	(*RespDeleteThread)(nil),                                           // 8: responses.RespDeleteThread
+	(*RespAutocompleteContacts)(nil),                                   // 9: responses.RespAutocompleteContacts
+	(*RespLookupContacts)(nil),                                         // 10: responses.RespLookupContacts
+	(*RespAutocompleteContacts_AffinityResponseContext)(nil),           // 11: responses.RespAutocompleteContacts.AffinityResponseContext
+	(*RespAutocompleteContacts_AffinityResponseContext_Feature)(nil),   // 12: responses.RespAutocompleteContacts.AffinityResponseContext.Feature
+	(*RespLookupContacts_Match)(nil),                                   // 13: responses.RespLookupContacts.Match
+	(*Thread)(nil),                                                     // 14: threads.Thread
+	(ThreadFolder)(0),                                                  // 15: threads.ThreadFolder
+	(*ThreadAttributes)(nil),                                           // 16: threads.ThreadAttributes
+	(*Account)(nil),                                                    // 17: account.Account
+	(*PersonWrapper)(nil),                                              // 18: contacts.PersonWrapper
+	(*ContactID)(nil),                                                  // 19: contacts.ContactID
 }
 var file_responses_proto_depIdxs = []int32{
-	7,  // 0: responses.RespGetThread.thread:type_name -> threads.Thread
-	7,  // 1: responses.RespListThreads.threads:type_name -> threads.Thread
-	8,  // 2: responses.RespSendSMS.threadFolders:type_name -> threads.ThreadFolder
-	9,  // 3: responses.RespUpdateAttributes.attributes:type_name -> threads.ThreadAttributes
-	3,  // 4: responses.RespBatchUpdateAttributes.items:type_name -> responses.RespUpdateAttributes
-	10, // 5: responses.RespGetAccount.account:type_name -> account.Account
-	6,  // [6:6] is the sub-list for method output_type
-	6,  // [6:6] is the sub-list for method input_type
-	6,  // [6:6] is the sub-list for extension type_name
-	6,  // [6:6] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	14, // 0: responses.RespGetThread.thread:type_name -> threads.Thread
+	14, // 1: responses.RespListThreads.threads:type_name -> threads.Thread
+	15, // 2: responses.RespSendSMS.threadFolders:type_name -> threads.ThreadFolder
+	16, // 3: responses.RespUpdateAttributes.attributes:type_name -> threads.ThreadAttributes
+	5,  // 4: responses.RespBatchUpdateAttributes.items:type_name -> responses.RespUpdateAttributes
+	17, // 5: responses.RespGetAccount.account:type_name -> account.Account
+	18, // 6: responses.RespAutocompleteContacts.results:type_name -> contacts.PersonWrapper
+	11, // 7: responses.RespAutocompleteContacts.affinityResponseContext:type_name -> responses.RespAutocompleteContacts.AffinityResponseContext
+	13, // 8: responses.RespLookupContacts.matches:type_name -> responses.RespLookupContacts.Match
+	12, // 9: responses.RespAutocompleteContacts.AffinityResponseContext.features:type_name -> responses.RespAutocompleteContacts.AffinityResponseContext.Feature
+	0,  // 10: responses.RespAutocompleteContacts.AffinityResponseContext.Feature.type:type_name -> responses.RespAutocompleteContacts.AffinityResponseContext.Feature.Type
+	19, // 11: responses.RespLookupContacts.Match.ID:type_name -> contacts.ContactID
+	18, // 12: responses.RespLookupContacts.Match.autocompletion:type_name -> contacts.PersonWrapper
+	1,  // 13: responses.RespLookupContacts.Match.failureType:type_name -> responses.RespLookupContacts.Match.FailureType
+	14, // [14:14] is the sub-list for method output_type
+	14, // [14:14] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_responses_proto_init() }
@@ -427,6 +832,7 @@ func file_responses_proto_init() {
 	}
 	file_threads_proto_init()
 	file_account_proto_init()
+	file_contacts_proto_init()
 	if !protoimpl.UnsafeEnabled {
 		file_responses_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*RespGetThread); i {
@@ -512,19 +918,80 @@ func file_responses_proto_init() {
 				return nil
 			}
 		}
+		file_responses_proto_msgTypes[7].Exporter = func(v any, i int) any {
+			switch v := v.(*RespAutocompleteContacts); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_responses_proto_msgTypes[8].Exporter = func(v any, i int) any {
+			switch v := v.(*RespLookupContacts); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_responses_proto_msgTypes[9].Exporter = func(v any, i int) any {
+			switch v := v.(*RespAutocompleteContacts_AffinityResponseContext); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_responses_proto_msgTypes[10].Exporter = func(v any, i int) any {
+			switch v := v.(*RespAutocompleteContacts_AffinityResponseContext_Feature); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_responses_proto_msgTypes[11].Exporter = func(v any, i int) any {
+			switch v := v.(*RespLookupContacts_Match); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_responses_proto_rawDesc,
-			NumEnums:      0,
-			NumMessages:   7,
+			NumEnums:      2,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_responses_proto_goTypes,
 		DependencyIndexes: file_responses_proto_depIdxs,
+		EnumInfos:         file_responses_proto_enumTypes,
 		MessageInfos:      file_responses_proto_msgTypes,
 	}.Build()
 	File_responses_proto = out.File

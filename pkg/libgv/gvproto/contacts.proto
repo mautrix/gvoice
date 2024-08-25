@@ -1,0 +1,106 @@
+syntax = "proto3";
+package contacts;
+option go_package = "../gvproto";
+
+message ContactID {
+    string phone = 2;
+}
+
+message ContactSourceID {
+    string profileID = 1;
+    string contactID = 2;
+}
+
+message ContactPhone {
+    string displayValue = 1;
+    string canonicalValue = 2;
+    string originalValue = 3;
+}
+
+message ContactEmail {
+    string email = 1;
+}
+
+message ContactDisplayInfo {
+    message Photo {
+        enum Type {
+            UNKNOWN_TYPE = 0;
+            MONOGRAM = 1;
+            USER_SPECIFIED = 3;
+        }
+
+        string URL = 1;
+        Type type = 2;
+    }
+
+    message Name {
+        enum SourceType {
+            UNKNOWN_SOURCE_TYPE = 0;
+            CONTACT = 2;
+        }
+
+        string value = 1;
+        string givenName = 2;
+        SourceType sourceType = 4;
+    }
+
+    Photo photo = 1;
+    Name name = 2;
+    Affinity affinity = 3;
+    bool primary = 4;
+}
+
+message StructuredPhone {
+    enum ValidationResult {
+        IS_POSSIBLE = 0;
+    }
+
+    message I18nData {
+        string nationalNumber = 1;
+        string internationalNumber = 2;
+        int32 countryCode = 3;
+        string regionCode = 4;
+        bool isValid = 5;
+        ValidationResult validationResult = 6;
+    }
+
+    message Phone {
+        string e164 = 1;
+        I18nData i18nData = 2;
+    }
+
+    Phone phone = 1;
+    string type = 3;
+}
+
+message PhoneExtendedData {
+    StructuredPhone structuredPhone = 1;
+}
+
+message PeopleStackFieldExtendedData {
+    PhoneExtendedData phoneExtendedData = 2;
+}
+
+message ContactMethod {
+    ContactDisplayInfo displayInfo = 1;
+    ContactEmail email = 2;
+    ContactPhone phone = 3;
+    repeated ContactSourceID sourceIDs = 5;
+    bool isPersonal = 8;
+    PeopleStackFieldExtendedData extendedData = 9;
+    string typeLabel = 10;
+}
+
+message Affinity {
+    string loggingID = 1;
+    double value = 2;
+}
+
+message Person {
+    repeated ContactMethod contactMethods = 1;
+    Affinity affinity = 2;
+}
+
+message PersonWrapper {
+    Person person = 1;
+}

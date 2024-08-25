@@ -23,6 +23,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/rs/zerolog"
 	"golang.org/x/time/rate"
 	"maunium.net/go/mautrix/bridge/status"
 	"maunium.net/go/mautrix/bridgev2"
@@ -41,6 +42,9 @@ type GVClient struct {
 	fetchEventsLimiter   *rate.Limiter
 	fetchEventsLock      sync.Mutex
 
+	contactCache     map[string]*ProcessedContact
+	contactCacheLock sync.Mutex
+
 	stopRealtime atomic.Pointer[context.CancelFunc]
 }
 
@@ -56,6 +60,7 @@ func (gv *GVConnector) LoadUserLogin(ctx context.Context, login *bridgev2.UserLo
 		lastEvents:           make(map[string]time.Time),
 		wakeupMessageFetcher: make(chan struct{}),
 		fetchEventsLimiter:   rate.NewLimiter(rate.Every(MinRefreshInterval), MinRefreshBurstCount),
+		contactCache:         make(map[string]*ProcessedContact),
 	}
 	lgvClient.EventHandler = gvClient.handleRealtimeEvent
 	login.Client = gvClient
@@ -82,10 +87,13 @@ func (gc *GVClient) Connect(ctx context.Context) error {
 
 func (gc *GVClient) connectRealtime() {
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	go gc.fetchNewMessagesLoop(gc.UserLogin.Log.With().Str("component", "fetch messages loop").Logger().WithContext(ctx))
-	log := gc.UserLogin.Log.With().Str("component", "realtime channel").Logger()
 	gc.stopRealtime.Store(&cancel)
+	defer cancel()
+
+	gc.loadInitialContacts(gc.UserLogin.Log.With().Str("action", "load initial contacts").Logger().WithContext(ctx))
+	go gc.fetchNewMessagesLoop(gc.UserLogin.Log.With().Str("component", "fetch messages loop").Logger().WithContext(ctx))
+
+	log := gc.UserLogin.Log.With().Str("component", "realtime channel").Logger()
 	ctx = log.WithContext(ctx)
 	err := gc.Client.RunRealtimeChannel(ctx)
 	if errors.Is(err, context.Canceled) {
@@ -99,6 +107,27 @@ func (gc *GVClient) connectRealtime() {
 			Error:      "gv-realtime-unknown-error",
 			Info:       map[string]any{"go_error": err.Error()},
 		})
+	}
+}
+
+func (gc *GVClient) loadInitialContacts(ctx context.Context) {
+	resp, err := gc.Client.AutocompleteContacts(ctx, "")
+	if err != nil {
+		zerolog.Ctx(ctx).Err(err).Msg("Failed to load initial contacts")
+		return
+	}
+	gc.contactCacheLock.Lock()
+	defer gc.contactCacheLock.Unlock()
+	for _, contact := range resp.Results {
+		for _, method := range contact.GetPerson().GetContactMethods() {
+			e164 := method.GetPhone().GetCanonicalValue()
+			if e164 != "" {
+				_, alreadyExists := gc.contactCache[e164]
+				if !alreadyExists || method.GetDisplayInfo().GetPrimary() {
+					gc.contactCache[e164] = processContact(contact.GetPerson())
+				}
+			}
+		}
 	}
 }
 

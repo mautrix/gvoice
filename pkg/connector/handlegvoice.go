@@ -130,7 +130,7 @@ func (gc *GVClient) fetchNewMessages(ctx context.Context) {
 					PortalKey:    portalKey,
 					CreatePortal: true,
 				},
-				ChatInfo:            gc.wrapChatInfo(thread),
+				ChatInfo:            gc.wrapChatInfo(ctx, thread),
 				LatestMessageTS:     lastMessageTS,
 				BundledBackfillData: thread,
 			})

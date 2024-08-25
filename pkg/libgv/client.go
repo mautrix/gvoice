@@ -168,3 +168,40 @@ func (c *Client) DownloadAttachment(ctx context.Context, mediaID string) (data [
 	data, err = io.ReadAll(resp.Body)
 	return
 }
+
+func (c *Client) AutocompleteContacts(ctx context.Context, query string) (*gvproto.RespAutocompleteContacts, error) {
+	var maxResults int32 = 15
+	if query == "" {
+		maxResults = 500
+	}
+	return ReadProtoResponse[*gvproto.RespAutocompleteContacts](
+		c.MakeRequest(ctx, http.MethodPost, EndpointAutocompleteContacts, nil, nil, &gvproto.ReqAutocompleteContacts{
+			UnknownInt1:  243,
+			Query:        query,
+			UnknownInts3: []int32{1, 2},
+			MaxResults:   maxResults,
+		}),
+	)
+}
+
+func (c *Client) LookupContact(ctx context.Context, phones ...string) (map[string]*gvproto.RespLookupContacts_Match, error) {
+	req := &gvproto.ReqLookupContacts{
+		UnknownInt1:  243,
+		UnknownInts2: []int32{1, 2},
+		Targets:      make([]*gvproto.ContactID, len(phones)),
+	}
+	for i, phone := range phones {
+		req.Targets[i] = &gvproto.ContactID{Phone: phone}
+	}
+	resp, err := ReadProtoResponse[*gvproto.RespLookupContacts](
+		c.MakeRequest(ctx, http.MethodPost, EndpointLookupContacts, nil, nil, req),
+	)
+	if err != nil {
+		return nil, err
+	}
+	contacts := make(map[string]*gvproto.RespLookupContacts_Match, len(resp.Matches))
+	for _, match := range resp.Matches {
+		contacts[match.ID.Phone] = match
+	}
+	return contacts, nil
+}

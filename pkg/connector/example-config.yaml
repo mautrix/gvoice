@@ -1,4 +1,6 @@
 # Displayname template for SMS users. Available variables:
-#  .Name (same as phone number in most cases)
+#  .Name - same as phone number in most cases
+#  .Contact.Name - name from contact list
+#  .Contact.FirstName - first name from contact list
 #  .PhoneNumber
-displayname_template: "{{ .Name }}"
+displayname_template: "{{ or .Contact.Name .Name }}"

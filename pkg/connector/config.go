@@ -23,6 +23,8 @@ import (
 
 	up "go.mau.fi/util/configupgrade"
 	"gopkg.in/yaml.v3"
+
+	"go.mau.fi/mautrix-gvoice/pkg/libgv/gvproto"
 )
 
 //go:embed example-config.yaml
@@ -52,17 +54,19 @@ func (c *Config) UnmarshalYAML(node *yaml.Node) error {
 type DisplaynameTemplateArgs struct {
 	PhoneNumber string
 	Name        string
+	Contact     *ProcessedContact
 }
 
 func (gv *GVConnector) GetConfig() (example string, data any, upgrader up.Upgrader) {
 	return ExampleConfig, &gv.Config, up.SimpleUpgrader(upgradeConfig)
 }
 
-func (c Config) FormatDisplayname(phone, name string) string {
+func (c Config) FormatDisplayname(info *gvproto.Contact, contact *ProcessedContact) string {
 	var buf strings.Builder
 	_ = c.displaynameTemplate.Execute(&buf, DisplaynameTemplateArgs{
-		PhoneNumber: phone,
-		Name:        name,
+		PhoneNumber: info.PhoneNumber,
+		Name:        info.Name,
+		Contact:     contact,
 	})
 	return buf.String()
 }

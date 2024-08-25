@@ -47,6 +47,7 @@ const (
 
 	APIDomain      = "clients6.google.com"
 	RealtimeDomain = "signaler-pa." + APIDomain
+	ContactsDomain = "peoplestack-pa." + APIDomain
 	UploadDomain   = "docs.google.com"
 
 	APIBaseURL                    = "https://" + APIDomain + "/voice/v1/voiceclient"
@@ -67,4 +68,8 @@ const (
 
 	EndpointUpload           = "https://" + UploadDomain + "/upload/photos/resumable"
 	EndpointDownloadTemplate = "https://voice.google.com/u/%s/a/i/%s"
+
+	ContactsBaseURL              = "https://" + ContactsDomain + "/$rpc/peoplestack.PeopleStackAutocompleteService"
+	EndpointAutocompleteContacts = ContactsBaseURL + "/Autocomplete"
+	EndpointLookupContacts       = ContactsBaseURL + "/Lookup"
 )

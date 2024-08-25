@@ -3,6 +3,7 @@ package requests;
 option go_package = "../gvproto";
 
 import "threads.proto";
+import "contacts.proto";
 
 message ReqGetAccount {
     int32 unknownInt2 = 2; // 1
@@ -71,4 +72,17 @@ message ReqUpdateAttributes {
 
 message ReqDeleteThread {
     string threadID = 1;
+}
+
+message ReqAutocompleteContacts {
+    int32 unknownInt1 = 1; // 243
+    string query = 2;
+    repeated int32 unknownInts3 = 3; // 1,2
+    int32 maxResults = 4; // 15 or 500
+}
+
+message ReqLookupContacts {
+    int32 unknownInt1 = 1; // 243
+    repeated int32 unknownInts2 = 2; // 1,2
+    repeated contacts.ContactID targets = 3;
 }
