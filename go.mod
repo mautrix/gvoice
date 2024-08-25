@@ -9,7 +9,7 @@ require (
 	golang.org/x/time v0.6.0
 	google.golang.org/protobuf v1.34.2
 	gopkg.in/yaml.v3 v3.0.1
-	maunium.net/go/mautrix v0.20.1-0.20240824231714-649a637350a0
+	maunium.net/go/mautrix v0.20.1-0.20240825192142-b68fdc9057bf
 )
 
 require (
