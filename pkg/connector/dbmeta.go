@@ -39,4 +39,5 @@ type GhostMetadata struct {
 
 type UserLoginMetadata struct {
 	Cookies map[string]string `json:"cookies"`
+	Prefix  string            `json:"prefix"`
 }

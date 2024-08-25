@@ -49,6 +49,10 @@ func (gc *GVClient) makePortalKey(threadID string) networkid.PortalKey {
 	}
 }
 
+func (gc *GVClient) makeUserID(e164 string) networkid.UserID {
+	return networkid.UserID(fmt.Sprintf("%s.%s", gc.UserLogin.Metadata.(*UserLoginMetadata).Prefix, e164))
+}
+
 func (gc *GVClient) wrapChatInfo(info *gvproto.Thread) *bridgev2.ChatInfo {
 	var wrapped bridgev2.ChatInfo
 	wrapped.Members = &bridgev2.ChatMemberList{
@@ -66,7 +70,7 @@ func (gc *GVClient) wrapChatInfo(info *gvproto.Thread) *bridgev2.ChatInfo {
 	}
 	wrapped.CanBackfill = true
 	if len(info.PhoneNumbers) == 1 {
-		wrapped.Members.OtherUserID = networkid.UserID(info.PhoneNumbers[0])
+		wrapped.Members.OtherUserID = gc.makeUserID(info.PhoneNumbers[0])
 		wrapped.Type = ptr.Ptr(database.RoomTypeDM)
 	} else {
 		wrapped.Type = ptr.Ptr(database.RoomTypeDefault)
@@ -75,7 +79,7 @@ func (gc *GVClient) wrapChatInfo(info *gvproto.Thread) *bridgev2.ChatInfo {
 		if strings.HasPrefix(member.PhoneNumber, "Group Message.") {
 			continue
 		}
-		userID := networkid.UserID(member.PhoneNumber)
+		userID := gc.makeUserID(member.PhoneNumber)
 		wrapped.Members.MemberMap[userID] = bridgev2.ChatMember{
 			EventSender: bridgev2.EventSender{Sender: userID},
 			UserInfo:    gc.wrapUserInfo(member),

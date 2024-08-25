@@ -137,7 +137,7 @@ func (gc *GVClient) fetchNewMessages(ctx context.Context) {
 			continue
 		}
 		for _, msg := range thread.Messages {
-			ts, txnID, sender := getMessageMeta(msg)
+			ts, txnID, sender := gc.getMessageMeta(msg)
 			if !ts.After(prevMsg) {
 				break
 			}
@@ -232,7 +232,7 @@ func (gc *GVClient) FetchMessages(ctx context.Context, params bridgev2.FetchMess
 	}
 	convertedMessages := make([]*bridgev2.BackfillMessage, len(messagesToConvert))
 	for i, msg := range messagesToConvert {
-		ts, txnID, sender := getMessageMeta(msg)
+		ts, txnID, sender := gc.getMessageMeta(msg)
 		converted, _ := gc.convertMessage(ctx, params.Portal, gc.Main.Bridge.Bot, msg)
 		convertedMessages[i] = &bridgev2.BackfillMessage{
 			ConvertedMessage: converted,
@@ -252,14 +252,14 @@ func (gc *GVClient) FetchMessages(ctx context.Context, params bridgev2.FetchMess
 	}, nil
 }
 
-func getMessageMeta(msg *gvproto.Message) (ts time.Time, txnID networkid.TransactionID, sender bridgev2.EventSender) {
+func (gc *GVClient) getMessageMeta(msg *gvproto.Message) (ts time.Time, txnID networkid.TransactionID, sender bridgev2.EventSender) {
 	ts = time.UnixMilli(msg.Timestamp)
 	if msg.Type == gvproto.Message_SMS_OUT {
 		sender.IsFromMe = true
 	} else if senderNum := msg.GetMMS().GetSenderPhoneNumber(); senderNum != "" {
-		sender.Sender = networkid.UserID(senderNum)
+		sender.Sender = gc.makeUserID(senderNum)
 	} else {
-		sender.Sender = networkid.UserID(msg.GetContact().GetPhoneNumber())
+		sender.Sender = gc.makeUserID(msg.GetContact().GetPhoneNumber())
 	}
 	if msg.TransactionID != 0 {
 		txnID = networkid.TransactionID(strconv.FormatInt(msg.TransactionID, 10))

@@ -20,20 +20,28 @@ import (
 	"context"
 
 	"maunium.net/go/mautrix/bridgev2"
+
+	"go.mau.fi/mautrix-gvoice/pkg/connector/gvdb"
 )
 
 type GVConnector struct {
 	Bridge *bridgev2.Bridge
 	Config Config
+	DB     *gvdb.GVDB
 }
 
 var _ bridgev2.NetworkConnector = (*GVConnector)(nil)
 
 func (gv *GVConnector) Init(bridge *bridgev2.Bridge) {
 	gv.Bridge = bridge
+	gv.DB = gvdb.New(bridge.DB.Database, bridge.Log.With().Str("db_section", "gvoice").Logger())
 }
 
 func (gv *GVConnector) Start(ctx context.Context) error {
+	err := gv.DB.Upgrade(ctx)
+	if err != nil {
+		return bridgev2.DBUpgradeError{Err: err, Section: "gvoice"}
+	}
 	return nil
 }
 

@@ -51,11 +51,12 @@ func (gv *GVConnector) CreateLogin(ctx context.Context, user *bridgev2.User, flo
 	if flowID != LoginFlowIDCookies {
 		return nil, fmt.Errorf("unknown login flow ID %q", flowID)
 	}
-	return &GVLogin{User: user}, nil
+	return &GVLogin{User: user, Main: gv}, nil
 }
 
 type GVLogin struct {
 	User *bridgev2.User
+	Main *GVConnector
 }
 
 var _ bridgev2.LoginProcessCookies = (*GVLogin)(nil)
@@ -112,14 +113,21 @@ func (gl *GVLogin) SubmitCookies(ctx context.Context, cookies map[string]string)
 		return nil, err
 	}
 	// TODO is google account email available somehow?
+	loginID := networkid.UserLoginID(fmt.Sprintf("%s|%s", gl.User.MXID, acc.Account.PrimaryDestinationID))
+	prefix, err := gl.Main.DB.GetLoginPrefix(ctx, loginID)
+	if err != nil {
+		zerolog.Ctx(ctx).Err(err).Msg("Failed to get login prefix")
+		return nil, err
+	}
 	ul, err := gl.User.NewLogin(ctx, &database.UserLogin{
-		ID:         networkid.UserLoginID(fmt.Sprintf("%s|%s", gl.User.MXID, acc.Account.PrimaryDestinationID)),
+		ID:         loginID,
 		RemoteName: acc.Account.PrimaryDestinationID,
 		RemoteProfile: status.RemoteProfile{
 			Phone: acc.Account.PrimaryDestinationID,
 		},
 		Metadata: &UserLoginMetadata{
 			Cookies: cli.GetCookies(),
+			Prefix:  prefix,
 		},
 	}, &bridgev2.NewLoginParams{
 		DeleteOnConflict: false,
