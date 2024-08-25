@@ -71,28 +71,30 @@ var cookieLoginStep = &bridgev2.LoginStep{
 }
 
 func init() {
-	cookies := []string{"OSID", "SID", "HSID", "SSID", "APISID", "SAPISID", "__Secure-1PSIDTS"}
+	cookies := map[string]string{
+		"OSID":             "voice.google.com",
+		"COMPASS":          "clients6.google.com",
+		"SID":              ".google.com",
+		"HSID":             ".google.com",
+		"SSID":             ".google.com",
+		"APISID":           ".google.com",
+		"SAPISID":          ".google.com",
+		"__Secure-1PSIDTS": ".google.com",
+	}
 	requiredCookies := []string{"SID", "HSID", "SSID", "APISID", "SAPISID"}
-	cookieLoginStep.CookiesParams.Fields = make([]bridgev2.LoginCookieField, len(cookies)+1)
-	for i, cookie := range cookies {
+	cookieLoginStep.CookiesParams.Fields = make([]bridgev2.LoginCookieField, len(cookies))
+	i := 0
+	for cookie, domain := range cookies {
 		cookieLoginStep.CookiesParams.Fields[i] = bridgev2.LoginCookieField{
 			ID:       cookie,
 			Required: slices.Contains(requiredCookies, cookie),
 			Sources: []bridgev2.LoginCookieFieldSource{{
 				Type:         bridgev2.LoginCookieTypeCookie,
 				Name:         cookie,
-				CookieDomain: "voice.google.com",
+				CookieDomain: domain,
 			}},
 		}
-	}
-	cookieLoginStep.CookiesParams.Fields[len(cookieLoginStep.CookiesParams.Fields)-1] = bridgev2.LoginCookieField{
-		ID:       "COMPASS",
-		Required: false,
-		Sources: []bridgev2.LoginCookieFieldSource{{
-			Type:         bridgev2.LoginCookieTypeCookie,
-			Name:         "COMPASS",
-			CookieDomain: "clients6.google.com",
-		}},
+		i++
 	}
 }
 
