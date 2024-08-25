@@ -81,16 +81,27 @@ func (c *Client) SubscribeRealtimeChannel(ctx context.Context) (string, *gvproto
 
 var noopSuffix = []byte(`,["noop"]]`)
 
+const ForceResubscribeInterval = 1 * time.Hour
+
 func (c *Client) RunRealtimeChannel(ctx context.Context) error {
 	gSessionID, channel, err := c.SubscribeRealtimeChannel(ctx)
 	if err != nil {
 		return err
 	}
+	lastResubscribe := time.Now()
 	log := zerolog.Ctx(ctx)
 	var ackID uint64
 	failedRequests := 0
-	initialConnect := true
 	for {
+		if time.Since(lastResubscribe) > ForceResubscribeInterval {
+			log.Debug().Msg("Forcing re-subscribe as channel has been alive for too long")
+			gSessionID, channel, err = c.SubscribeRealtimeChannel(ctx)
+			if err != nil {
+				return fmt.Errorf("failed to re-subscribe after timeout: %w", err)
+			}
+			lastResubscribe = time.Now()
+			ackID = 0
+		}
 		query := url.Values{
 			"VER":        {"8"},
 			"gsessionid": {gSessionID},
@@ -122,15 +133,16 @@ func (c *Client) RunRealtimeChannel(ctx context.Context) error {
 				if err != nil {
 					return fmt.Errorf("failed to re-subscribe after unknown SID: %w", err)
 				}
+				lastResubscribe = time.Now()
 				ackID = 0
 				continue
 			}
 			return fmt.Errorf("failed to send channel request: %w", err)
 		}
-		if failedRequests != 0 || initialConnect {
+		if failedRequests != 0 || ackID == 0 {
 			log.Debug().
 				Int("failure_count", failedRequests).
-				Bool("is_initial", initialConnect).
+				Uint64("ack_id", ackID).
 				Msg("Realtime long polling connected, sending event")
 			c.dispatchEvent(ctx, &RealtimeConnected{})
 		}
@@ -169,7 +181,6 @@ func (c *Client) RunRealtimeChannel(ctx context.Context) error {
 					c.dispatchEvent(ctx, &RealtimeEvent{WebChannelEvent: &parsed})
 				}
 				failedRequests = 0
-				initialConnect = false
 			}
 		}
 	}
