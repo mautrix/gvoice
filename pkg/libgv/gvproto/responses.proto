@@ -1,0 +1,38 @@
+syntax = "proto3";
+package responses;
+option go_package = "../gvproto";
+
+import "threads.proto";
+import "account.proto";
+
+message RespGetThread {
+    threads.Thread thread = 1;
+}
+
+message RespListThreads {
+    repeated threads.Thread threads = 1;
+    string versionToken = 3;
+}
+
+message RespSendSMS {
+    string threadID = 2;
+    string threadItemID = 3;
+    int64 timestampMS = 4;
+    repeated threads.ThreadFolder threadFolders = 5;
+}
+
+message RespUpdateAttributes {
+    threads.ThreadAttributes attributes = 1;
+}
+
+message RespBatchUpdateAttributes {
+    RespUpdateAttributes items = 1;
+}
+
+message RespGetAccount {
+    account.Account account = 1;
+}
+
+message RespDeleteThread {
+
+}

@@ -1,0 +1,2 @@
+pkg/libgv/gvproto/*.pb.go linguist-generated=true
+pkg/libgv/gvproto/*.pb.raw binary linguist-generated=true

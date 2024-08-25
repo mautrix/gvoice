@@ -1,0 +1,85 @@
+syntax = "proto3";
+package webchannel;
+option go_package = "../gvproto";
+
+message RespChooseServer {
+    string gSessionID = 1;
+    int32 unknownInt = 2; // 3
+}
+
+message RespCreateChannel {
+    WebChannelSessionData data = 1;
+}
+
+message WebChannelSessionData {
+    int32 field1 = 1; // 0
+    WebChannelSession session = 2;
+}
+
+message WebChannelSession {
+    string field1 = 1; // "c"?
+    string sessionID = 2;
+    string field3 = 3; // empty string
+    uint32 field4 = 4; // 8, version?
+    uint32 field5 = 5; // 12, ???
+    uint32 pingInterval = 6; // 30000
+}
+
+message WebChannelEvent {
+    uint64 arrayID = 1;
+    repeated WebChannelEventDataWrapper data_wrapper = 2;
+}
+
+message WebChannelNoopEvent {
+    uint64 arrayID = 1;
+    repeated string noop = 2;
+}
+
+message WebChannelEventDataWrapper {
+    // TODO this may also be the string "noop"
+    repeated WebChannelEventData data = 1;
+    // field 2 may have [1]
+}
+
+message WebChannelEventData {
+    string eventSource = 1; // Seems to be 1, 2, 3, 4, 5, 6 or 9. Same as the create channel reqX___data__'s
+    Event event = 2;
+}
+
+message Event {
+    EventSub1 sub1 = 1;
+    EventSub2 sub2 = 2;
+    EventSub3 sub3 = 3;
+}
+
+message Empty {}
+
+message EventSub1 {
+    Empty unknown1 = 1;
+}
+
+message EventSub2 {
+    repeated EventSub2Data data = 1;
+}
+
+message EventSub2Data {
+    message NestedData {
+        string ts1 = 1;
+        string ts2 = 2;
+        string ts3 = 3;
+        string ts4 = 4;
+        string ts5 = 5;
+        string ts6 = 6;
+        string ts7 = 7;
+        string ts9 = 9;
+    }
+    bytes unknownBytes = 2;
+    string unknownTimestampMillis = 3;
+    string unknownTimestampMicros = 4;
+    NestedData unknownNestedData = 5;
+    // 5 has a nested value of some kind
+}
+
+message EventSub3 {
+    string unknownTimestamp = 1;
+}

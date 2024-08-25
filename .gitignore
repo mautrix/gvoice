@@ -1,0 +1,14 @@
+.idea
+
+*.yaml
+!.pre-commit-config.yaml
+!example-config.yaml
+
+*.json
+*.db
+*.log
+*.log.gz
+*.bak
+
+/mautrix-gvoice
+/start

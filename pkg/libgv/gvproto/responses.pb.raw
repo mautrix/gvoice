@@ -1,0 +1,22 @@
+
+responses.proto	responsesthreads.protoaccount.proto"8
+RespGetThread'
+thread (2.threads.ThreadRthread"`
+RespListThreads)
+threads (2.threads.ThreadRthreads"
+versionToken (	RversionToken"¬
+RespSendSMS
+threadID (	RthreadID"
+threadItemID (	RthreadItemID 
+timestampMS (RtimestampMS;
+threadFolders (2.threads.ThreadFolderRthreadFolders"Q
+RespUpdateAttributes9
+
+attributes (2.threads.ThreadAttributesR
+attributes"R
+RespBatchUpdateAttributes5
+items (2.responses.RespUpdateAttributesRitems"<
+RespGetAccount*
+account (2.account.AccountRaccount"
+RespDeleteThreadBZ
+../gvprotobproto3

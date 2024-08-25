@@ -1,0 +1,74 @@
+syntax = "proto3";
+package requests;
+option go_package = "../gvproto";
+
+import "threads.proto";
+
+message ReqGetAccount {
+    int32 unknownInt2 = 2; // 1
+}
+
+message ReqSendSMS {
+    message WrappedTxnID {
+        int64 ID = 1;
+    }
+
+    message TrackingData {
+        string data = 1;
+    }
+
+    message Media {
+        enum Type {
+            UNKNOWN_TYPE = 0;
+            JPEG = 1;
+            PNG = 2;
+            TIFF = 3;
+            GIF = 4;
+            BMP = 5;
+            WEBP = 6;
+        }
+        Type type = 1;
+        string URL = 4;
+    }
+
+    string text = 5;
+    string threadID = 6;
+    repeated string recipients = 7;
+    WrappedTxnID transactionID = 9;
+    Media media = 10;
+    TrackingData trackingData = 11;
+}
+
+message UnknownWrapper {
+    int32 unknownInt2 = 2; // 1
+    int32 unknownInt3 = 3; // 1
+}
+
+message ReqListThreads {
+    int32 unknownInt1 = 1; // 1
+    int32 unknownInt2 = 2; // 10 or 20
+    int32 unknownInt3 = 3; // 15
+    string versionToken = 5;
+    UnknownWrapper unknownWrapper = 6;
+}
+
+message ReqGetThread {
+    string threadID = 1;
+    int32 maybeMessageCount = 2; // 100
+    string paginationToken = 3;
+    UnknownWrapper unknownWrapper = 4;
+}
+
+message ReqGetThreadingInfo {
+
+}
+
+message ReqUpdateAttributes {
+    threads.ThreadAttributes attributes = 1;
+    threads.ThreadAttributes otherAttributes = 2;
+    int32 unknownInt = 3;
+}
+
+message ReqDeleteThread {
+    string threadID = 1;
+}

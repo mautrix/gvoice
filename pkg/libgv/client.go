@@ -1,0 +1,170 @@
+// mautrix-gvoice - A Matrix-Google Voice puppeting bridge.
+// Copyright (C) 2024 Tulir Asokan
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+package libgv
+
+import (
+	"context"
+	"fmt"
+	"io"
+	"maps"
+	"math/rand/v2"
+	"net/http"
+	"net/url"
+	"strconv"
+	"sync"
+	"time"
+
+	"go.mau.fi/mautrix-gvoice/pkg/libgv/gvproto"
+)
+
+type Client struct {
+	HTTP     *http.Client
+	AuthUser string
+
+	EventHandler func(context.Context, any)
+
+	cookies     map[string]string
+	cookiesLock sync.RWMutex
+}
+
+func NewClient(cookies map[string]string) *Client {
+	return &Client{
+		HTTP:     &http.Client{Timeout: 120 * time.Second},
+		cookies:  cookies,
+		AuthUser: "0",
+	}
+}
+
+func (c *Client) GetCookies() map[string]string {
+	c.cookiesLock.RLock()
+	defer c.cookiesLock.RUnlock()
+	return maps.Clone(c.cookies)
+}
+
+func (c *Client) dispatchEvent(ctx context.Context, evt any) {
+	if handler := c.EventHandler; handler != nil {
+		handler(ctx, evt)
+	}
+}
+
+func (c *Client) updateCookies(ctx context.Context, resp *http.Response) {
+	respCookies := resp.Cookies()
+	if len(respCookies) == 0 {
+		return
+	}
+	c.cookiesLock.Lock()
+	defer c.cookiesLock.Unlock()
+	cookiesChanged := false
+	for _, cookie := range respCookies {
+		if cookie.Expires.Before(time.Now()) || cookie.MaxAge < 0 {
+			delete(c.cookies, cookie.Name)
+			cookiesChanged = true
+			continue
+		}
+		if c.cookies[cookie.Name] != cookie.Value {
+			c.cookies[cookie.Name] = cookie.Value
+			cookiesChanged = cookiesChanged || (cookie.Name != "__Secure-1PSIDCC" && cookie.Name != "__Secure-3PSIDCC" && cookie.Name != "SIDCC")
+		}
+	}
+	if cookiesChanged {
+		c.dispatchEvent(ctx, &CookieChanged{Cookies: maps.Clone(c.cookies)})
+	}
+}
+
+func (c *Client) GetAccount(ctx context.Context) (*gvproto.RespGetAccount, error) {
+	return ReadProtoResponse[*gvproto.RespGetAccount](
+		c.MakeRequest(ctx, http.MethodPost, EndpointGetAccount, nil, nil, &gvproto.ReqGetAccount{
+			UnknownInt2: 1,
+		}),
+	)
+}
+
+func GenerateTransactionID() int64 {
+	return rand.Int64N(100000000000000)
+}
+
+func (c *Client) SendMessage(ctx context.Context, req *gvproto.ReqSendSMS) (*gvproto.RespSendSMS, error) {
+	if req.TrackingData == nil {
+		req.TrackingData = &gvproto.ReqSendSMS_TrackingData{Data: "!"}
+	}
+	if req.TransactionID == nil {
+		req.TransactionID = &gvproto.ReqSendSMS_WrappedTxnID{ID: GenerateTransactionID()}
+	}
+	return ReadProtoResponse[*gvproto.RespSendSMS](
+		c.MakeRequest(ctx, http.MethodPost, EndpointSendSMS, nil, nil, req),
+	)
+}
+
+func (c *Client) UpdateThreadAttributes(ctx context.Context, req *gvproto.ReqUpdateAttributes) (*gvproto.RespUpdateAttributes, error) {
+	return ReadProtoResponse[*gvproto.RespUpdateAttributes](
+		c.MakeRequest(ctx, http.MethodPost, EndpointUpdateAttributes, nil, nil, req),
+	)
+}
+
+func (c *Client) GetThread(ctx context.Context, threadID string, messageCount int, paginationToken string) (*gvproto.RespGetThread, error) {
+	return ReadProtoResponse[*gvproto.RespGetThread](
+		c.MakeRequest(ctx, http.MethodPost, EndpointGetThread, nil, nil, &gvproto.ReqGetThread{
+			ThreadID:          threadID,
+			MaybeMessageCount: int32(messageCount),
+			PaginationToken:   paginationToken,
+			UnknownWrapper: &gvproto.UnknownWrapper{
+				UnknownInt2: 1,
+				UnknownInt3: 1,
+			},
+		}),
+	)
+}
+
+func (c *Client) ListThreads(ctx context.Context, versionToken string) (*gvproto.RespListThreads, error) {
+	req := &gvproto.ReqListThreads{
+		UnknownInt1:  1,
+		UnknownInt2:  20,
+		UnknownInt3:  15,
+		VersionToken: versionToken,
+		UnknownWrapper: &gvproto.UnknownWrapper{
+			UnknownInt2: 1,
+			UnknownInt3: 1,
+		},
+	}
+	if req.VersionToken != "" {
+		req.UnknownInt2 = 10
+	}
+	return ReadProtoResponse[*gvproto.RespListThreads](
+		c.MakeRequest(ctx, http.MethodPost, EndpointListThreads, nil, nil, req),
+	)
+}
+
+func (c *Client) DeleteThread(ctx context.Context, threadID string) (*gvproto.RespDeleteThread, error) {
+	return ReadProtoResponse[*gvproto.RespDeleteThread](
+		c.MakeRequest(ctx, http.MethodPost, EndpointDeleteThread, nil, nil, &gvproto.ReqDeleteThread{
+			ThreadID: threadID,
+		}),
+	)
+}
+
+func (c *Client) DownloadAttachment(ctx context.Context, mediaID string) (data []byte, mime string, err error) {
+	var resp *http.Response
+	resp, err = c.MakeRequest(ctx, http.MethodGet, fmt.Sprintf(EndpointDownloadTemplate, c.AuthUser, mediaID), url.Values{
+		"s": {strconv.Itoa(int(gvproto.Attachment_Metadata_ORIGINAL))},
+	}, nil, nil)
+	if err != nil {
+		return
+	}
+	mime = resp.Header.Get("Content-Type")
+	data, err = io.ReadAll(resp.Body)
+	return
+}

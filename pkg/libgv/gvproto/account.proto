@@ -1,0 +1,208 @@
+syntax = "proto3";
+package account;
+option go_package = "../gvproto";
+
+message Account {
+    string primaryDestinationID = 1;
+    repeated Phone phones = 3;
+    Communication communication = 4;
+    //Integration integration = 6;
+    //ClientAccess clientAccess = 7;
+    //Promos promos = 8;
+    //Accessibility accessibility = 9;
+    //Status status = 10;
+    //DisplayHints displayHints = 11;
+    //Address address = 12;
+    AccountVersion version = 13;
+    //InboxSupport inboxSupport = 14;
+    //Feedback feedback = 15;
+}
+
+message AccountVersion {
+    string versionToken = 1;
+}
+
+enum ClientType {
+    UNKNOWN_CLIENT_TYPE = 0;
+    GV_WEB = 3;
+}
+
+enum ClientSetting {
+    UNKNOWN_CLIENT_SETTING = 0;
+    DISABLED = 1;
+    ENABLED = 2;
+}
+
+enum ApplicabilityLevel {
+    UNKNOWN_APPLICABILITY_LEVEL = 0;
+    APPLICABLE = 1;
+    NOT_APPLICABLE_HIDDEN = 2;
+}
+
+enum SupportLevel {
+    UNKNOWN_SUPPORT_LEVEL = 0;
+    SUPPORTED_FOR_ACCOUNT = 1;
+    UNSUPPORTED_FOR_ACCOUNT = 2;
+}
+
+message Communication {
+    message DoNotDisturb {
+        message ApplicabilityMask {
+            bool enabled = 1;
+        }
+
+        message ApplicabilityLevels {
+            ApplicabilityLevel enabled = 1;
+            ApplicabilityLevel expiration = 2;
+            ApplicabilityLevel enableDndOutsideWorkHours = 3;
+            ApplicabilityLevel enableDndOutOfOffice = 4;
+            ApplicabilityLevel dndReason = 5;
+            ApplicabilityLevel allLines = 6;
+            ApplicabilityLevel directLines = 7;
+            ApplicabilityLevel allRgLines = 8;
+        }
+
+        bool enabled = 1;
+        bool enableDndOutsideWorkHours = 2;
+        bool enableDndOutOfOffice = 3;
+        //DndReason dndReason = 4 or 5;
+        //unknown unknown = 5 or 4;
+        //InvertedClientSetting allLines = 6;
+        //InvertedClientSetting directLines = 7;
+        //InvertedClientSetting allRgLines = 8;
+        ApplicabilityMask applicabilityMask = 202;
+        ApplicabilityLevels applicabilityLevels = 203;
+    }
+
+    message Transcription {
+        message ApplicabilityMask {
+            bool enableForVoicemail = 1;
+            bool consentsToMachineAnalysis = 2;
+        }
+
+        message ApplicabilityLevels {
+            ApplicabilityLevel enableForVoicemail = 1;
+            ApplicabilityLevel consentsToMachineAnalysis = 2;
+        }
+
+        bool enableForVoicemail = 1;
+        bool consentsToMachineAnalysis = 2;
+        ApplicabilityMask applicabilityMask = 202;
+        ApplicabilityLevels applicabilityLevels = 203;
+    }
+
+    message SupportedActions {
+        message ApplicabilityLevels {
+            ApplicabilityLevel useHangoutsForCalling = 8;
+        }
+
+        bool clickToCall = 1;
+        SupportLevel sendSMS = 2;
+        bool interceptAndroidDialerCalling = 3;
+        SupportLevel makeEmergencyVoIPCall = 4;
+        repeated string emergencyVoIPCallSupportedCountries = 5;
+        SupportLevel makeShortCodeProxyCall = 6;
+        SupportLevel transferCall = 7;
+        SupportLevel useHangoutsForCalling = 8;
+        SupportLevel allowAllShortCodeDialing = 9;
+        SupportLevel allowArbitraryPhoneNumberDialing = 10;
+        //AllowTransferCallingSupportLevel allowTransferCalling = 11;
+
+        ApplicabilityLevels applicabilityLevels = 203;
+    }
+
+    bool enableGlobalSpamFiltering = 1;
+    DoNotDisturb doNotDisturb = 2;
+    Transcription transcription = 3;
+    SupportedActions supportedActions = 4;
+    //MessagingSupport messagingSupport = 5;
+    bool enableInCallCommands = 6;
+    //EmailForwardingModalities emailForwardingModalities = 8;
+    //CallScreening callScreening = 9;
+    string defaultOutgoingNumberRegionCode = 10;
+    //VoicemailGreeting voicemailGreeting = 11;
+    //VoIP voip = 12;
+    //EmergencyCallbackMode emergencyCallbackMode = 13;
+    bool enableAnonymousOutboundCalls = 14;
+    bool useDestinationIDAsCallerID = 15;
+    PhoneNumber defaultOutboundCallerID = 16;
+    //AnotherSupportLevel manageInboundCallRules = 17;
+    //VoicemailAccess voicemailAccess = 18;
+    //ApplicabilityMask applicabilityMask = 202;
+    //ApplicabilityLevels applicabilityLevels = 203;
+}
+
+message Phone {
+    AccountPhone accountPhone = 1;
+    LinkedPhoneRestrictions linkedPhoneRestrictions = 4;
+    repeated LinkedVoIPDevice linkedVoIPDevices = 5;
+    DefaultVoIPSettings defaultVoIPSettings = 6;
+    repeated CallAsPhone callAsPhone = 7;
+    bool signupForNewNumber = 8;
+    bool eligibleForSelfSignup = 9;
+    bool eligibleForAdminSignup = 10;
+}
+
+message LinkedPhoneRestrictions {
+    message CountryWhitelist {
+        repeated string regionCode = 1;
+    }
+    CountryWhitelist countryWhitelist = 1;
+}
+
+message LinkedVoIPDevice {
+    string SIPDeviceID = 1;
+    ClientType clientType = 2;
+    string name = 3;
+    // TODO forwardingModalities
+    ClientSetting inboundCalls = 6;
+    ClientSetting outboundCalls = 7;
+    // TODO modifiabilityMask
+    // TODO availableUpdateActions
+}
+
+message DefaultVoIPSettings {
+    ClientSetting preferVoIP = 1;
+}
+
+message CallAsPhone {
+    enum DisplayHint {
+        UNKNOWN_DISPLAY_HINT = 0;
+        DIRECT = 3;
+    }
+    PhoneNumber phoneNumber = 1;
+    bool initialSelection = 2;
+    DisplayHint displayHint = 4;
+}
+
+message AccountPhone {
+    enum Branding {
+        UNKNOWN_BRANDING = 0;
+        GOOGLE_VOICE = 1;
+    }
+
+    message SupportedActions {
+        bool remove = 1;
+        bool transfer = 2;
+        bool change = 3;
+        bool lock = 4;
+        bool unlock = 5;
+    }
+
+    message ApplicabilityLevels {
+        ApplicabilityLevel defaultForOutboundCommunications = 2;
+        ApplicabilityLevel expirationTime = 5;
+        ApplicabilityLevel isPermanent = 6;
+    }
+
+    PhoneNumber phoneNumber = 1;
+    bool defaultForOutboundCommunications = 2;
+    Branding branding = 3;
+    SupportedActions supportedActions = 4;
+    bool isPermanent = 6;
+    ApplicabilityLevels applicabilityLevels = 203;
+}
+
+message PhoneNumber {
+    string e164 = 1;
+}
