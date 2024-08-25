@@ -113,7 +113,7 @@ func (gl *GVLogin) SubmitCookies(ctx context.Context, cookies map[string]string)
 	}
 	// TODO is google account email available somehow?
 	ul, err := gl.User.NewLogin(ctx, &database.UserLogin{
-		ID:         networkid.UserLoginID(acc.Account.PrimaryDestinationID),
+		ID:         networkid.UserLoginID(fmt.Sprintf("%s|%s", gl.User.MXID, acc.Account.PrimaryDestinationID)),
 		RemoteName: acc.Account.PrimaryDestinationID,
 		RemoteProfile: status.RemoteProfile{
 			Phone: acc.Account.PrimaryDestinationID,
@@ -122,7 +122,7 @@ func (gl *GVLogin) SubmitCookies(ctx context.Context, cookies map[string]string)
 			Cookies: cli.GetCookies(),
 		},
 	}, &bridgev2.NewLoginParams{
-		DeleteOnConflict: true,
+		DeleteOnConflict: false,
 	})
 	if err != nil {
 		return nil, err
