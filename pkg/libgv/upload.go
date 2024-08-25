@@ -19,6 +19,7 @@ package libgv
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -87,7 +88,7 @@ type RespFinishUpload struct {
 						Timestamp      float64 `json:"timestamp"`
 						AutoDownsized  bool    `json:"autoDownsized"`
 						AutoEnhance    bool    `json:"autoEnhance"`
-						Position       int     `json:"position"`
+						Position       float64 `json:"position"`
 						ImageVersion   int     `json:"imageVersion"`
 						IsPhotoDeduped bool    `json:"isPhotoDeduped"`
 					} `json:"customerSpecificInfo"`
@@ -143,15 +144,20 @@ func (c *Client) UploadPhoto(ctx context.Context, fileName, mimeType string, pho
 			ContentType: "text/plain",
 		},
 	}}
+	startReqBytes, err := json.Marshal(startReq)
+	if err != nil {
+		return "", err
+	}
 	resp, err := c.MakeRequest(ctx, http.MethodPost, EndpointUpload, url.Values{
 		"authuser": {c.AuthUser},
 		"opi":      {UploadOPI},
 	}, http.Header{
+		"Content-Type":                        {ContentTypeFormData},
 		"X-Goog-Upload-Command":               {"start"},
 		"X-Goog-Upload-Header-Content-Length": {strconv.Itoa(len(photo))},
 		"X-Goog-Upload-Header-Content-Type":   {mimeType},
 		"X-Goog-Upload-Protocol":              {"resumable"},
-	}, nil)
+	}, startReqBytes)
 	if err != nil {
 		return "", err
 	}
