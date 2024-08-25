@@ -100,6 +100,8 @@ func (re *ResponseError) Error() string {
 	return fmt.Sprintf("unexpected status code %d", re.Resp.StatusCode)
 }
 
+const MaxRetryCount = 10
+
 func (c *Client) MakeRequest(ctx context.Context, method, baseAddr string, query url.Values, headers http.Header, body any) (*http.Response, error) {
 	parsedAddr, err := url.Parse(baseAddr)
 	if err != nil {
@@ -158,19 +160,74 @@ func (c *Client) MakeRequest(ctx context.Context, method, baseAddr string, query
 		}
 	}
 
-	req, err := http.NewRequestWithContext(ctx, method, parsedAddr.String(), realBody)
-	if err != nil {
-		return nil, fmt.Errorf("failed to prepare request: %w", err)
+	retryCount := 0
+	for {
+		req, resp, err := c.makeRequestDirect(ctx, method, parsedAddr, headers.Clone(), realBody, retryCount > 0)
+		if err != nil || resp.StatusCode >= 400 {
+			if resp == nil || resp.StatusCode < 500 || retryCount > MaxRetryCount {
+				return nil, c.logRequestFail(ctx, parsedAddr, req, resp, err, retryCount, 0)
+			}
+			retryCount++
+			retryIn := time.Duration(retryCount) * 2 * time.Second
+			_ = c.logRequestFail(ctx, parsedAddr, req, resp, err, retryCount, retryIn)
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(retryIn):
+				continue
+			}
+		}
+		logLevel := zerolog.DebugLevel
+		if baseAddr == EndpointRealtimeChannel && method == http.MethodGet {
+			logLevel = zerolog.TraceLevel
+		}
+		zerolog.Ctx(ctx).WithLevel(logLevel).
+			Int("status_code", resp.StatusCode).
+			Stringer("request_url", parsedAddr).
+			Int("retry_count", retryCount).
+			Msg("Request successful")
+		return resp, nil
 	}
-	req.Header = headers
+}
+
+func (c *Client) makeRequestDirect(ctx context.Context, method string, parsedAddr *url.URL, headers http.Header, body io.Reader, isRetry bool) (*http.Request, *http.Response, error) {
+	if isRetry {
+		bodySeeker, ok := body.(io.Seeker)
+		if ok {
+			_, err := bodySeeker.Seek(0, io.SeekStart)
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed to seek body: %w", err)
+			}
+		} else {
+			return nil, nil, fmt.Errorf("can't retry request with non-seekable body")
+		}
+	}
+	req, err := http.NewRequestWithContext(ctx, method, parsedAddr.String(), body)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to prepare request: %w", err)
+	}
+	req.Header = headers.Clone()
 	c.prepareHeaders(req)
 	resp, err := c.HTTP.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to send request: %w", err)
-	} else if resp.StatusCode >= 400 {
-		data, _ := io.ReadAll(resp.Body)
+		return req, nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	if strings.HasSuffix(parsedAddr.Host, APIDomain) {
+		c.updateCookies(ctx, resp)
+	}
+	return req, resp, nil
+}
+
+func (c *Client) logRequestFail(ctx context.Context, addr *url.URL, req *http.Request, resp *http.Response, err error, retryCount int, retryIn time.Duration) *ResponseError {
+	logEvt := zerolog.Ctx(ctx).Warn().
+		Stringer("request_url", addr).
+		Int("retry_count", retryCount)
+	var data []byte
+	if resp != nil {
+		data, _ = io.ReadAll(resp.Body)
 		_ = resp.Body.Close()
-		logEvt := zerolog.Ctx(ctx).Warn().Int("status_code", resp.StatusCode)
+		logEvt.
+			Int("status_code", resp.StatusCode)
 		if zerolog.Ctx(ctx).GetLevel() == zerolog.TraceLevel {
 			if json.Valid(data) {
 				logEvt.RawJSON("response_json", data)
@@ -180,17 +237,19 @@ func (c *Client) MakeRequest(ctx context.Context, method, baseAddr string, query
 				logEvt.Str("response_data", "response too long to log")
 			}
 		}
-		logEvt.Msg("Request failed")
-		return nil, &ResponseError{
-			Req:  req,
-			Resp: resp,
-			Body: data,
-		}
+	} else {
+		logEvt.Err(err)
 	}
-	if strings.HasSuffix(parsedAddr.Host, APIDomain) {
-		c.updateCookies(ctx, resp)
+	if retryIn > 0 {
+		logEvt.Stringer("retry_in", retryIn).Msg("Request failed, retrying")
+	} else {
+		logEvt.Msg("Request failed, not retrying")
 	}
-	return resp, nil
+	return &ResponseError{
+		Req:  req,
+		Resp: resp,
+		Body: data,
+	}
 }
 
 func ReadProtoResponse[T proto.Message](resp *http.Response, err error) (T, error) {
