@@ -42,8 +42,8 @@ func (gv *GVConnector) GetName() bridgev2.BridgeName {
 		DisplayName:          "Google Voice",
 		NetworkURL:           "https://voice.google.com",
 		NetworkIcon:          "mxc://maunium.net/VOPtYGBzHLRfPTEzGgNMpeKo",
-		NetworkID:            "googlevoice",
-		BeeperBridgeType:     "googlevoice",
+		NetworkID:            "gvoice",
+		BeeperBridgeType:     "gvoice",
 		DefaultPort:          29338,
 		DefaultCommandPrefix: "!gv",
 	}
