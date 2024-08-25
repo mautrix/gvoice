@@ -6,8 +6,10 @@ enum ThreadFolder {
     UNKNOWN_THREAD_FOLDER = 0;
     ALL_THREADS = 1;
     TEXT_THREADS = 2;
+    ALL_CALL_THREADS = 3; // uncertain
+    ALL_VOICEMAIL_THREADS = 4; // uncertain
+    ALL_SPAM_THREADS = 5; // uncertain
     ALL_ARCHIVED_THREADS = 6;
-    // TODO there are probably more
 }
 
 enum ContactSpammerStatus {

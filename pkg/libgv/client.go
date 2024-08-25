@@ -129,9 +129,9 @@ func (c *Client) GetThread(ctx context.Context, threadID string, messageCount in
 	)
 }
 
-func (c *Client) ListThreads(ctx context.Context, versionToken string) (*gvproto.RespListThreads, error) {
+func (c *Client) ListThreads(ctx context.Context, folder gvproto.ThreadFolder, versionToken string) (*gvproto.RespListThreads, error) {
 	req := &gvproto.ReqListThreads{
-		UnknownInt1:  1,
+		Folder:       folder,
 		UnknownInt2:  20,
 		UnknownInt3:  15,
 		VersionToken: versionToken,

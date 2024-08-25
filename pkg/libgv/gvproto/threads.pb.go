@@ -29,7 +29,10 @@ const (
 	ThreadFolder_UNKNOWN_THREAD_FOLDER ThreadFolder = 0
 	ThreadFolder_ALL_THREADS           ThreadFolder = 1
 	ThreadFolder_TEXT_THREADS          ThreadFolder = 2
-	ThreadFolder_ALL_ARCHIVED_THREADS  ThreadFolder = 6 // TODO there are probably more
+	ThreadFolder_ALL_CALL_THREADS      ThreadFolder = 3 // uncertain
+	ThreadFolder_ALL_VOICEMAIL_THREADS ThreadFolder = 4 // uncertain
+	ThreadFolder_ALL_SPAM_THREADS      ThreadFolder = 5 // uncertain
+	ThreadFolder_ALL_ARCHIVED_THREADS  ThreadFolder = 6
 )
 
 // Enum value maps for ThreadFolder.
@@ -38,12 +41,18 @@ var (
 		0: "UNKNOWN_THREAD_FOLDER",
 		1: "ALL_THREADS",
 		2: "TEXT_THREADS",
+		3: "ALL_CALL_THREADS",
+		4: "ALL_VOICEMAIL_THREADS",
+		5: "ALL_SPAM_THREADS",
 		6: "ALL_ARCHIVED_THREADS",
 	}
 	ThreadFolder_value = map[string]int32{
 		"UNKNOWN_THREAD_FOLDER": 0,
 		"ALL_THREADS":           1,
 		"TEXT_THREADS":          2,
+		"ALL_CALL_THREADS":      3,
+		"ALL_VOICEMAIL_THREADS": 4,
+		"ALL_SPAM_THREADS":      5,
 		"ALL_ARCHIVED_THREADS":  6,
 	}
 )

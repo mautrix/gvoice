@@ -278,7 +278,7 @@ type ReqListThreads struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	UnknownInt1    int32           `protobuf:"varint,1,opt,name=unknownInt1,proto3" json:"unknownInt1,omitempty"` // 1
+	Folder         ThreadFolder    `protobuf:"varint,1,opt,name=folder,proto3,enum=threads.ThreadFolder" json:"folder,omitempty"`
 	UnknownInt2    int32           `protobuf:"varint,2,opt,name=unknownInt2,proto3" json:"unknownInt2,omitempty"` // 10 or 20
 	UnknownInt3    int32           `protobuf:"varint,3,opt,name=unknownInt3,proto3" json:"unknownInt3,omitempty"` // 15
 	VersionToken   string          `protobuf:"bytes,5,opt,name=versionToken,proto3" json:"versionToken,omitempty"`
@@ -317,11 +317,11 @@ func (*ReqListThreads) Descriptor() ([]byte, []int) {
 	return file_requests_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *ReqListThreads) GetUnknownInt1() int32 {
+func (x *ReqListThreads) GetFolder() ThreadFolder {
 	if x != nil {
-		return x.UnknownInt1
+		return x.Folder
 	}
-	return 0
+	return ThreadFolder_UNKNOWN_THREAD_FOLDER
 }
 
 func (x *ReqListThreads) GetUnknownInt2() int32 {
@@ -752,22 +752,24 @@ var file_requests_proto_goTypes = []any{
 	(*ReqSendSMS_WrappedTxnID)(nil), // 9: requests.ReqSendSMS.WrappedTxnID
 	(*ReqSendSMS_TrackingData)(nil), // 10: requests.ReqSendSMS.TrackingData
 	(*ReqSendSMS_Media)(nil),        // 11: requests.ReqSendSMS.Media
-	(*ThreadAttributes)(nil),        // 12: threads.ThreadAttributes
+	(ThreadFolder)(0),               // 12: threads.ThreadFolder
+	(*ThreadAttributes)(nil),        // 13: threads.ThreadAttributes
 }
 var file_requests_proto_depIdxs = []int32{
 	9,  // 0: requests.ReqSendSMS.transactionID:type_name -> requests.ReqSendSMS.WrappedTxnID
 	11, // 1: requests.ReqSendSMS.media:type_name -> requests.ReqSendSMS.Media
 	10, // 2: requests.ReqSendSMS.trackingData:type_name -> requests.ReqSendSMS.TrackingData
-	3,  // 3: requests.ReqListThreads.unknownWrapper:type_name -> requests.UnknownWrapper
-	3,  // 4: requests.ReqGetThread.unknownWrapper:type_name -> requests.UnknownWrapper
-	12, // 5: requests.ReqUpdateAttributes.attributes:type_name -> threads.ThreadAttributes
-	12, // 6: requests.ReqUpdateAttributes.otherAttributes:type_name -> threads.ThreadAttributes
-	0,  // 7: requests.ReqSendSMS.Media.type:type_name -> requests.ReqSendSMS.Media.Type
-	8,  // [8:8] is the sub-list for method output_type
-	8,  // [8:8] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	12, // 3: requests.ReqListThreads.folder:type_name -> threads.ThreadFolder
+	3,  // 4: requests.ReqListThreads.unknownWrapper:type_name -> requests.UnknownWrapper
+	3,  // 5: requests.ReqGetThread.unknownWrapper:type_name -> requests.UnknownWrapper
+	13, // 6: requests.ReqUpdateAttributes.attributes:type_name -> threads.ThreadAttributes
+	13, // 7: requests.ReqUpdateAttributes.otherAttributes:type_name -> threads.ThreadAttributes
+	0,  // 8: requests.ReqSendSMS.Media.type:type_name -> requests.ReqSendSMS.Media.Type
+	9,  // [9:9] is the sub-list for method output_type
+	9,  // [9:9] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_requests_proto_init() }

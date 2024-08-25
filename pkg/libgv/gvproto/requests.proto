@@ -45,7 +45,7 @@ message UnknownWrapper {
 }
 
 message ReqListThreads {
-    int32 unknownInt1 = 1; // 1
+    threads.ThreadFolder folder = 1;
     int32 unknownInt2 = 2; // 10 or 20
     int32 unknownInt3 = 3; // 15
     string versionToken = 5;

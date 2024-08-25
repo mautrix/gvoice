@@ -110,7 +110,7 @@ func (gc *GVClient) fetchNewMessages(ctx context.Context) {
 	gc.fetchEventsLock.Lock()
 	defer gc.fetchEventsLock.Unlock()
 	zerolog.Ctx(ctx).Debug().Msg("Fetching new messages")
-	resp, err := gc.Client.ListThreads(ctx, "")
+	resp, err := gc.Client.ListThreads(ctx, gvproto.ThreadFolder_ALL_THREADS, "")
 	if err != nil {
 		zerolog.Ctx(ctx).Err(err).Msg("Failed to list threads")
 		return
