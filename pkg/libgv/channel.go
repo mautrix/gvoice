@@ -151,15 +151,19 @@ func (c *Client) RunRealtimeChannel(ctx context.Context) error {
 			var chunk []byte
 			chunk, err = reader.ReadChunk()
 			if err != nil {
+				_ = resp.Body.Close()
 				if errors.Is(err, io.EOF) {
 					break
 				}
-				return fmt.Errorf("failed to read chunk: %w", err)
+				log.Err(err).Msg("Failed to read chunk")
+				break
 			}
 			var entries []json.RawMessage
 			err = json.Unmarshal(chunk, &entries)
 			if err != nil {
-				return fmt.Errorf("failed to parse chunk into list: %w", err)
+				_ = resp.Body.Close()
+				log.Err(err).Msg("Failed to parse chunk into list")
+				break
 			}
 			for i, entry := range entries {
 				if bytes.HasSuffix(entry, noopSuffix) {
