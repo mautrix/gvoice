@@ -5,7 +5,7 @@ go 1.22
 require (
 	github.com/rs/zerolog v1.33.0
 	github.com/stretchr/testify v1.9.0
-	go.mau.fi/util v0.7.1-0.20240825102321-33d03e7e3cc4
+	go.mau.fi/util v0.7.1-0.20240826142731-d642a8a8b6fb
 	golang.org/x/time v0.6.0
 	google.golang.org/protobuf v1.34.2
 	gopkg.in/yaml.v3 v3.0.1

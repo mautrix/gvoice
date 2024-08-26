@@ -36,9 +36,13 @@ message WebChannelNoopEvent {
 }
 
 message WebChannelEventDataWrapper {
+    message AltData {
+        bool reconnect = 1;
+    }
+
     // TODO this may also be the string "noop"
     repeated WebChannelEventData data = 1;
-    // field 2 may have [1]
+    AltData altData = 2;
 }
 
 message WebChannelEventData {

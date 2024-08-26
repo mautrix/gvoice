@@ -383,7 +383,8 @@ type WebChannelEventDataWrapper struct {
 	unknownFields protoimpl.UnknownFields
 
 	// TODO this may also be the string "noop"
-	Data []*WebChannelEventData `protobuf:"bytes,1,rep,name=data,proto3" json:"data,omitempty"` // field 2 may have [1]
+	Data    []*WebChannelEventData              `protobuf:"bytes,1,rep,name=data,proto3" json:"data,omitempty"`
+	AltData *WebChannelEventDataWrapper_AltData `protobuf:"bytes,2,opt,name=altData,proto3" json:"altData,omitempty"`
 }
 
 func (x *WebChannelEventDataWrapper) Reset() {
@@ -421,6 +422,13 @@ func (*WebChannelEventDataWrapper) Descriptor() ([]byte, []int) {
 func (x *WebChannelEventDataWrapper) GetData() []*WebChannelEventData {
 	if x != nil {
 		return x.Data
+	}
+	return nil
+}
+
+func (x *WebChannelEventDataWrapper) GetAltData() *WebChannelEventDataWrapper_AltData {
+	if x != nil {
+		return x.AltData
 	}
 	return nil
 }
@@ -793,6 +801,53 @@ func (x *EventSub3) GetUnknownTimestamp() string {
 	return ""
 }
 
+type WebChannelEventDataWrapper_AltData struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Reconnect bool `protobuf:"varint,1,opt,name=reconnect,proto3" json:"reconnect,omitempty"`
+}
+
+func (x *WebChannelEventDataWrapper_AltData) Reset() {
+	*x = WebChannelEventDataWrapper_AltData{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_webchannel_proto_msgTypes[14]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *WebChannelEventDataWrapper_AltData) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WebChannelEventDataWrapper_AltData) ProtoMessage() {}
+
+func (x *WebChannelEventDataWrapper_AltData) ProtoReflect() protoreflect.Message {
+	mi := &file_webchannel_proto_msgTypes[14]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WebChannelEventDataWrapper_AltData.ProtoReflect.Descriptor instead.
+func (*WebChannelEventDataWrapper_AltData) Descriptor() ([]byte, []int) {
+	return file_webchannel_proto_rawDescGZIP(), []int{6, 0}
+}
+
+func (x *WebChannelEventDataWrapper_AltData) GetReconnect() bool {
+	if x != nil {
+		return x.Reconnect
+	}
+	return false
+}
+
 type EventSub2Data_NestedData struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -811,7 +866,7 @@ type EventSub2Data_NestedData struct {
 func (x *EventSub2Data_NestedData) Reset() {
 	*x = EventSub2Data_NestedData{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_webchannel_proto_msgTypes[14]
+		mi := &file_webchannel_proto_msgTypes[15]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -824,7 +879,7 @@ func (x *EventSub2Data_NestedData) String() string {
 func (*EventSub2Data_NestedData) ProtoMessage() {}
 
 func (x *EventSub2Data_NestedData) ProtoReflect() protoreflect.Message {
-	mi := &file_webchannel_proto_msgTypes[14]
+	mi := &file_webchannel_proto_msgTypes[15]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -913,41 +968,43 @@ func file_webchannel_proto_rawDescGZIP() []byte {
 	return file_webchannel_proto_rawDescData
 }
 
-var file_webchannel_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_webchannel_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_webchannel_proto_goTypes = []any{
-	(*RespChooseServer)(nil),           // 0: webchannel.RespChooseServer
-	(*RespCreateChannel)(nil),          // 1: webchannel.RespCreateChannel
-	(*WebChannelSessionData)(nil),      // 2: webchannel.WebChannelSessionData
-	(*WebChannelSession)(nil),          // 3: webchannel.WebChannelSession
-	(*WebChannelEvent)(nil),            // 4: webchannel.WebChannelEvent
-	(*WebChannelNoopEvent)(nil),        // 5: webchannel.WebChannelNoopEvent
-	(*WebChannelEventDataWrapper)(nil), // 6: webchannel.WebChannelEventDataWrapper
-	(*WebChannelEventData)(nil),        // 7: webchannel.WebChannelEventData
-	(*Event)(nil),                      // 8: webchannel.Event
-	(*Empty)(nil),                      // 9: webchannel.Empty
-	(*EventSub1)(nil),                  // 10: webchannel.EventSub1
-	(*EventSub2)(nil),                  // 11: webchannel.EventSub2
-	(*EventSub2Data)(nil),              // 12: webchannel.EventSub2Data
-	(*EventSub3)(nil),                  // 13: webchannel.EventSub3
-	(*EventSub2Data_NestedData)(nil),   // 14: webchannel.EventSub2Data.NestedData
+	(*RespChooseServer)(nil),                   // 0: webchannel.RespChooseServer
+	(*RespCreateChannel)(nil),                  // 1: webchannel.RespCreateChannel
+	(*WebChannelSessionData)(nil),              // 2: webchannel.WebChannelSessionData
+	(*WebChannelSession)(nil),                  // 3: webchannel.WebChannelSession
+	(*WebChannelEvent)(nil),                    // 4: webchannel.WebChannelEvent
+	(*WebChannelNoopEvent)(nil),                // 5: webchannel.WebChannelNoopEvent
+	(*WebChannelEventDataWrapper)(nil),         // 6: webchannel.WebChannelEventDataWrapper
+	(*WebChannelEventData)(nil),                // 7: webchannel.WebChannelEventData
+	(*Event)(nil),                              // 8: webchannel.Event
+	(*Empty)(nil),                              // 9: webchannel.Empty
+	(*EventSub1)(nil),                          // 10: webchannel.EventSub1
+	(*EventSub2)(nil),                          // 11: webchannel.EventSub2
+	(*EventSub2Data)(nil),                      // 12: webchannel.EventSub2Data
+	(*EventSub3)(nil),                          // 13: webchannel.EventSub3
+	(*WebChannelEventDataWrapper_AltData)(nil), // 14: webchannel.WebChannelEventDataWrapper.AltData
+	(*EventSub2Data_NestedData)(nil),           // 15: webchannel.EventSub2Data.NestedData
 }
 var file_webchannel_proto_depIdxs = []int32{
 	2,  // 0: webchannel.RespCreateChannel.data:type_name -> webchannel.WebChannelSessionData
 	3,  // 1: webchannel.WebChannelSessionData.session:type_name -> webchannel.WebChannelSession
 	6,  // 2: webchannel.WebChannelEvent.data_wrapper:type_name -> webchannel.WebChannelEventDataWrapper
 	7,  // 3: webchannel.WebChannelEventDataWrapper.data:type_name -> webchannel.WebChannelEventData
-	8,  // 4: webchannel.WebChannelEventData.event:type_name -> webchannel.Event
-	10, // 5: webchannel.Event.sub1:type_name -> webchannel.EventSub1
-	11, // 6: webchannel.Event.sub2:type_name -> webchannel.EventSub2
-	13, // 7: webchannel.Event.sub3:type_name -> webchannel.EventSub3
-	9,  // 8: webchannel.EventSub1.unknown1:type_name -> webchannel.Empty
-	12, // 9: webchannel.EventSub2.data:type_name -> webchannel.EventSub2Data
-	14, // 10: webchannel.EventSub2Data.unknownNestedData:type_name -> webchannel.EventSub2Data.NestedData
-	11, // [11:11] is the sub-list for method output_type
-	11, // [11:11] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	14, // 4: webchannel.WebChannelEventDataWrapper.altData:type_name -> webchannel.WebChannelEventDataWrapper.AltData
+	8,  // 5: webchannel.WebChannelEventData.event:type_name -> webchannel.Event
+	10, // 6: webchannel.Event.sub1:type_name -> webchannel.EventSub1
+	11, // 7: webchannel.Event.sub2:type_name -> webchannel.EventSub2
+	13, // 8: webchannel.Event.sub3:type_name -> webchannel.EventSub3
+	9,  // 9: webchannel.EventSub1.unknown1:type_name -> webchannel.Empty
+	12, // 10: webchannel.EventSub2.data:type_name -> webchannel.EventSub2Data
+	15, // 11: webchannel.EventSub2Data.unknownNestedData:type_name -> webchannel.EventSub2Data.NestedData
+	12, // [12:12] is the sub-list for method output_type
+	12, // [12:12] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_webchannel_proto_init() }
@@ -1125,6 +1182,18 @@ func file_webchannel_proto_init() {
 			}
 		}
 		file_webchannel_proto_msgTypes[14].Exporter = func(v any, i int) any {
+			switch v := v.(*WebChannelEventDataWrapper_AltData); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_webchannel_proto_msgTypes[15].Exporter = func(v any, i int) any {
 			switch v := v.(*EventSub2Data_NestedData); i {
 			case 0:
 				return &v.state
@@ -1143,7 +1212,7 @@ func file_webchannel_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_webchannel_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   15,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

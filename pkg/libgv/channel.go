@@ -181,6 +181,16 @@ func (c *Client) RunRealtimeChannel(ctx context.Context) error {
 						log.Debug().RawJSON("failed_entry", entry).Msg("Failed to parse channel entry")
 						return fmt.Errorf("failed to parse entry #%d: %w", i+1, err)
 					}
+					if len(parsed.GetDataWrapper()) == 1 && parsed.GetDataWrapper()[0].GetAltData().GetReconnect() {
+						log.Debug().Msg("Got event that probably means we need to reconnect")
+						gSessionID, channel, err = c.SubscribeRealtimeChannel(ctx)
+						if err != nil {
+							return fmt.Errorf("failed to re-subscribe after timeout: %w", err)
+						}
+						lastResubscribe = time.Now()
+						ackID = 0
+						break
+					}
 					ackID = parsed.ArrayID
 					c.dispatchEvent(ctx, &RealtimeEvent{WebChannelEvent: &parsed})
 				}

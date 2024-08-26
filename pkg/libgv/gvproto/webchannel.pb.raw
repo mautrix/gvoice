@@ -25,9 +25,12 @@ unknownInt"J
 data_wrapper (2&.webchannel.WebChannelEventDataWrapperRdataWrapper"C
 WebChannelNoopEvent
 arrayID (RarrayID
-noop (	Rnoop"Q
+noop (	Rnoop"Ä
 WebChannelEventDataWrapper3
-data (2.webchannel.WebChannelEventDataRdata"`
+data (2.webchannel.WebChannelEventDataRdataH
+altData (2..webchannel.WebChannelEventDataWrapper.AltDataRaltData'
+AltData
+	reconnect (R	reconnect"`
 WebChannelEventData 
 eventSource (	ReventSource'
 event (2.webchannel.EventRevent"ˆ
