@@ -147,6 +147,7 @@ func (c *Client) RunRealtimeChannel(ctx context.Context) error {
 			c.dispatchEvent(ctx, &RealtimeConnected{})
 		}
 		reader := utf16chunk.NewReader(resp.Body)
+	ReadLoop:
 		for {
 			var chunk []byte
 			chunk, err = reader.ReadChunk()
@@ -182,6 +183,7 @@ func (c *Client) RunRealtimeChannel(ctx context.Context) error {
 						return fmt.Errorf("failed to parse entry #%d: %w", i+1, err)
 					}
 					if len(parsed.GetDataWrapper()) == 1 && parsed.GetDataWrapper()[0].GetAltData().GetReconnect() {
+						_ = resp.Body.Close()
 						log.Debug().Msg("Got event that probably means we need to reconnect")
 						gSessionID, channel, err = c.SubscribeRealtimeChannel(ctx)
 						if err != nil {
@@ -189,7 +191,7 @@ func (c *Client) RunRealtimeChannel(ctx context.Context) error {
 						}
 						lastResubscribe = time.Now()
 						ackID = 0
-						break
+						break ReadLoop
 					}
 					ackID = parsed.ArrayID
 					c.dispatchEvent(ctx, &RealtimeEvent{WebChannelEvent: &parsed})
