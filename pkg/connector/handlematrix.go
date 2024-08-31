@@ -50,6 +50,8 @@ func (gc *GVClient) HandleMatrixMessage(ctx context.Context, msg *bridgev2.Matri
 		} else if td != "" {
 			req.TrackingData = &gvproto.ReqSendSMS_TrackingData{Data: td}
 		}
+	} else {
+		zerolog.Ctx(ctx).Debug().Msg("Electron not running, sending message without signature data")
 	}
 	switch msg.Content.MsgType {
 	case event.MsgText, event.MsgNotice:
