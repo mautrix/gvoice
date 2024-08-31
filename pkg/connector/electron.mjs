@@ -113,7 +113,7 @@ app.whenReady().then(() => {
 		window.webContents.openDevTools()
 	}
 	window.loadURL("about:blank", {
-		userAgent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+		userAgent: window.webContents.session.getUserAgent().replace(/Electron\/[^ ]+ /, ""),
 	}).then(() => {
 		console.log(JSON.stringify({status: "waiting_for_init"}))
 	})
