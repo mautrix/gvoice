@@ -80,6 +80,8 @@ const processIPC = async data => {
 
 const DEBUG_MODE = process.env.MAUTRIX_GVOICE_ELECTRON_DEBUG === "true"
 
+const staticAllowedURLs = ["https://voice.google.com/", "https://voice.google.com/u/0/about", "https://voice.google.com/about"]
+
 app.whenReady().then(() => {
 	window = new BrowserWindow({
 		width: 1280,
@@ -87,10 +89,22 @@ app.whenReady().then(() => {
 		show: DEBUG_MODE,
 	})
 	window.webContents.session.webRequest.onBeforeRequest((details, callback) => {
-		if (details.url === allowedScriptSource || details.url.startsWith("devtools://")) {
+		if (details.url === allowedScriptSource || staticAllowedURLs.includes(details.url) || details.url.startsWith("devtools://")) {
 			callback({cancel: false})
 		} else {
 			callback({cancel: true})
+		}
+	})
+	window.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+		if (details.responseHeaders["content-security-policy"]) {
+			callback({
+				responseHeaders: {
+					...details.responseHeaders,
+					"content-security-policy": "",
+				}
+			})
+		} else {
+			callback({})
 		}
 	})
 
@@ -115,7 +129,7 @@ app.whenReady().then(() => {
 	if (DEBUG_MODE) {
 		window.webContents.openDevTools()
 	}
-	window.loadURL("about:blank", {
+	window.loadURL("https://voice.google.com/about", {
 		userAgent: window.webContents.session.getUserAgent().replace(/Electron\/[^ ]+ /, ""),
 	}).then(() => {
 		console.log(JSON.stringify({status: "waiting_for_init"}))

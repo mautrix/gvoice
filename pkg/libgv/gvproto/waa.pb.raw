@@ -3,9 +3,18 @@
 ReqCreateWaa
 
 requestKey (	R
-requestKey"2
+requestKey"f
+
+ReqPingWaa
+
+requestKey (	R
+requestKey
+payload (	Rpayload
+i1 (Ri1
+i2 (Ri2"2
 RespCreateWaa!
-waa (2.waa.CreatedWaaRwaa"ô
+waa (2.waa.CreatedWaaRwaa"
+RespPingWaa"ô
 
 CreatedWaa
 respID (	RrespIDF
