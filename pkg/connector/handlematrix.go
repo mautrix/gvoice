@@ -42,6 +42,15 @@ func (gc *GVClient) HandleMatrixMessage(ctx context.Context, msg *bridgev2.Matri
 			ID: libgv.GenerateTransactionID(),
 		},
 	}
+	if rs := gc.requestSignature.Load(); rs != nil {
+		recipients := msg.Portal.Metadata.(*PortalMetadata).Participants
+		td, err := (*rs)(ctx, req.ThreadID, recipients, req.TransactionID.ID)
+		if err != nil {
+			zerolog.Ctx(ctx).Err(err).Msg("Failed to generate signature")
+		} else if td != "" {
+			req.TrackingData = &gvproto.ReqSendSMS_TrackingData{Data: td}
+		}
+	}
 	switch msg.Content.MsgType {
 	case event.MsgText, event.MsgNotice:
 		req.Text = msg.Content.Body

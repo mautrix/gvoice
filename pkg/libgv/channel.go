@@ -155,6 +155,8 @@ func (c *Client) RunRealtimeChannel(ctx context.Context) error {
 				_ = resp.Body.Close()
 				if errors.Is(err, io.EOF) {
 					break
+				} else if errors.Is(err, context.Canceled) {
+					return ctx.Err()
 				}
 				log.Err(err).Msg("Failed to read chunk")
 				break

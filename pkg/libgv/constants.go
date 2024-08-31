@@ -20,9 +20,10 @@ import (
 	"net/url"
 )
 
-const UserAgent = "Mozilla/5.0 (X11; Linux x86_64; rv:130.0) Gecko/20100101 Firefox/130.0"
+const UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
 const ClientVersion = "665865172"
 const JavaScriptUserAgent = "google-api-javascript-client/1.1.0"
+const WaaXUserAgent = "grpc-web-javascript/0.1"
 
 var ClientDetails = url.Values{
 	"appVersion": {"5.0 (X11)"},
@@ -38,8 +39,10 @@ const (
 )
 
 const (
-	APIKey    = "AIzaSyDTYc1N4xiODyrQYK0Kl6g_y279LjYkrBg"
-	UploadOPI = "111538494"
+	APIKey        = "AIzaSyDTYc1N4xiODyrQYK0Kl6g_y279LjYkrBg"
+	UploadOPI     = "111538494"
+	WaaAPIKey     = "AIzaSyBGb5fGAyC-pRcRU6MUHb__b_vKha71HRE"
+	WaaRequestKey = "/JR8jsAkqotcKsEKhXic"
 )
 
 const (
@@ -49,6 +52,7 @@ const (
 	RealtimeDomain = "signaler-pa." + APIDomain
 	ContactsDomain = "peoplestack-pa." + APIDomain
 	UploadDomain   = "docs.google.com"
+	WaaDomain      = "waa-pa." + APIDomain
 
 	APIBaseURL                    = "https://" + APIDomain + "/voice/v1/voiceclient"
 	EndpointGetAccount            = APIBaseURL + "/account/get"
@@ -72,4 +76,7 @@ const (
 	ContactsBaseURL              = "https://" + ContactsDomain + "/$rpc/peoplestack.PeopleStackAutocompleteService"
 	EndpointAutocompleteContacts = ContactsBaseURL + "/Autocomplete"
 	EndpointLookupContacts       = ContactsBaseURL + "/Lookup"
+
+	WaaBaseURL        = "https://" + WaaDomain + "/$rpc/google.internal.waa.v1.Waa"
+	EndpointCreateWaa = WaaBaseURL + "/Create"
 )

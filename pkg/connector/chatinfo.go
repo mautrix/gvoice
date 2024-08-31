@@ -90,6 +90,15 @@ func (gc *GVClient) wrapChatInfo(ctx context.Context, info *gvproto.Thread) *bri
 			UserInfo:    gc.wrapUserInfo(ctx, member),
 		}
 	}
+	wrapped.ExtraUpdates = func(ctx context.Context, portal *bridgev2.Portal) bool {
+		slices.Sort(info.PhoneNumbers)
+		meta := portal.Metadata.(*PortalMetadata)
+		if !slices.Equal(info.PhoneNumbers, meta.Participants) {
+			meta.Participants = info.PhoneNumbers
+			return true
+		}
+		return false
+	}
 	return &wrapped
 }
 

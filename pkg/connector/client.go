@@ -45,7 +45,9 @@ type GVClient struct {
 	contactCache     map[string]*ProcessedContact
 	contactCacheLock sync.Mutex
 
-	stopRealtime atomic.Pointer[context.CancelFunc]
+	stopRealtime     atomic.Pointer[context.CancelFunc]
+	requestSignature atomic.Pointer[requestSignatureFunc]
+	stopWait         sync.WaitGroup
 }
 
 func (gv *GVConnector) LoadUserLogin(ctx context.Context, login *bridgev2.UserLogin) error {
@@ -92,6 +94,7 @@ func (gc *GVClient) connectRealtime() {
 
 	gc.loadInitialContacts(gc.UserLogin.Log.With().Str("action", "load initial contacts").Logger().WithContext(ctx))
 	go gc.fetchNewMessagesLoop(gc.UserLogin.Log.With().Str("component", "fetch messages loop").Logger().WithContext(ctx))
+	go gc.runElectron(ctx)
 
 	log := gc.UserLogin.Log.With().Str("component", "realtime channel").Logger()
 	ctx = log.WithContext(ctx)
@@ -135,6 +138,7 @@ func (gc *GVClient) Disconnect() {
 	if stop := gc.stopRealtime.Swap(nil); stop != nil {
 		(*stop)()
 	}
+	gc.stopWait.Wait()
 }
 
 func (gc *GVClient) IsLoggedIn() bool {

@@ -22,7 +22,9 @@ import (
 
 func (gv *GVConnector) GetDBMetaTypes() database.MetaTypes {
 	return database.MetaTypes{
-		Portal: nil,
+		Portal: func() any {
+			return &PortalMetadata{}
+		},
 		Ghost: func() any {
 			return &GhostMetadata{}
 		},
@@ -40,4 +42,8 @@ type GhostMetadata struct {
 type UserLoginMetadata struct {
 	Cookies map[string]string `json:"cookies"`
 	Prefix  string            `json:"prefix"`
+}
+
+type PortalMetadata struct {
+	Participants []string `json:"participants"`
 }

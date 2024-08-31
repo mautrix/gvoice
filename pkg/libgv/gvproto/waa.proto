@@ -1,0 +1,24 @@
+syntax = "proto3";
+package waa;
+option go_package = "../gvproto";
+
+message ReqCreateWaa {
+    string requestKey = 1;
+}
+
+message RespCreateWaa {
+    CreatedWaa waa = 1;
+}
+
+message CreatedWaa {
+    message InterpreterURL {
+        string URL = 4;
+    }
+
+    string respID = 1;
+    // When using binary protobuf, these are offset down by 1 and there's no respID
+    InterpreterURL interpreterURL = 3;
+    string interpreterHash = 4;
+    string program = 5;
+    string globalName = 6;
+}

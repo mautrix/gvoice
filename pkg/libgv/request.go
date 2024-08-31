@@ -59,9 +59,13 @@ func (c *Client) prepareHeaders(req *http.Request) {
 		req.Header.Set("X-Goog-Api-Key", APIKey)
 		req.Header.Set("X-Goog-Encode-Response-If-Executable", "base64")
 	}
+	if req.URL.Host == WaaDomain {
+		req.Header.Set("X-Goog-Api-Key", WaaAPIKey)
+		req.Header.Set("X-User-Agent", WaaXUserAgent)
+	}
 	req.Header.Set("Sec-Fetch-Dest", "empty")
 	req.Header.Set("Sec-Fetch-Mode", "cors")
-	if req.URL.Host == RealtimeDomain || req.URL.Host == ContactsDomain {
+	if strings.HasSuffix(req.URL.Host, "."+APIDomain) {
 		req.Header.Set("Sec-Fetch-Site", "same-site")
 	} else {
 		req.Header.Set("Sec-Fetch-Site", "same-origin")
@@ -111,7 +115,7 @@ func (c *Client) MakeRequest(ctx context.Context, method, baseAddr string, query
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse URL: %w", err)
 	}
-	if strings.HasSuffix(parsedAddr.Host, APIDomain) {
+	if strings.HasSuffix(parsedAddr.Host, APIDomain) && parsedAddr.Host != WaaDomain {
 		if query == nil {
 			query = make(url.Values)
 		}

@@ -205,3 +205,12 @@ func (c *Client) LookupContact(ctx context.Context, phones ...string) (map[strin
 	}
 	return contacts, nil
 }
+
+func (c *Client) CreateWaa(ctx context.Context) (*gvproto.CreatedWaa, error) {
+	resp, err := ReadProtoResponse[*gvproto.RespCreateWaa](
+		c.MakeRequest(ctx, http.MethodPost, EndpointCreateWaa, nil, nil, &gvproto.ReqCreateWaa{
+			RequestKey: WaaRequestKey,
+		}),
+	)
+	return resp.GetWaa(), err
+}
