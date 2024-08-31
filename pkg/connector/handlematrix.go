@@ -18,6 +18,7 @@ package connector
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -42,16 +43,22 @@ func (gc *GVClient) HandleMatrixMessage(ctx context.Context, msg *bridgev2.Matri
 			ID: libgv.GenerateTransactionID(),
 		},
 	}
+	var electronStatus string
 	if rs := gc.requestSignature.Load(); rs != nil {
 		recipients := msg.Portal.Metadata.(*PortalMetadata).Participants
 		td, err := (*rs)(ctx, req.ThreadID, recipients, req.TransactionID.ID)
 		if err != nil {
 			zerolog.Ctx(ctx).Err(err).Msg("Failed to generate signature")
+			electronStatus = "failed"
 		} else if td != "" {
 			req.TrackingData = &gvproto.ReqSendSMS_TrackingData{Data: td}
+			electronStatus = "ok"
+		} else {
+			electronStatus = "failed/empty"
 		}
 	} else {
 		zerolog.Ctx(ctx).Debug().Msg("Electron not running, sending message without signature data")
+		electronStatus = "unavailable"
 	}
 	switch msg.Content.MsgType {
 	case event.MsgText, event.MsgNotice:
@@ -96,6 +103,20 @@ func (gc *GVClient) HandleMatrixMessage(ctx context.Context, msg *bridgev2.Matri
 	}
 	resp, err := gc.Client.SendMessage(ctx, req)
 	if err != nil {
+		var respErr *libgv.ResponseError
+		if errors.As(err, &respErr) {
+			var status int
+			if respErr.Resp != nil {
+				status = respErr.Resp.StatusCode
+			}
+			if status == 429 {
+				err = fmt.Errorf("%w (electron status: %s)", err, electronStatus)
+			}
+			err = bridgev2.WrapErrorInStatus(err).
+				WithIsCertain(status >= 400 && status < 500).
+				WithSendNotice(true).
+				WithErrorAsMessage()
+		}
 		return nil, err
 	}
 	return &bridgev2.MatrixMessageResponse{
