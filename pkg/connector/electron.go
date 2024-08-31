@@ -107,9 +107,9 @@ func (gc *GVClient) runElectron(ctx context.Context) {
 		defer responseWaiters.Delete(reqID)
 		defer close(waiter)
 		payload := map[string]string{
-			"thread_id":    base64.RawStdEncoding.EncodeToString(threadIDHash[:]),
-			"destinations": base64.RawStdEncoding.EncodeToString(recipientsHash[:]),
-			"message_ids":  base64.RawStdEncoding.EncodeToString(messageIDHash[:]),
+			"thread_id":    base64.StdEncoding.EncodeToString(threadIDHash[:]),
+			"destinations": base64.StdEncoding.EncodeToString(recipientsHash[:]),
+			"message_ids":  base64.StdEncoding.EncodeToString(messageIDHash[:]),
 		}
 		zerolog.Ctx(ctx).Debug().
 			Str("req_id", reqID).

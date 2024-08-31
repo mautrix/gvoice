@@ -36,8 +36,9 @@ const loadScript = ({script_source, checksum}) => {
 	})
 }
 
-const executeScript = ({payload, program, global_name}) => {
-	console.log("Executing", window.globalName, "with", payload)
+const executeScript = ({payload: {message_ids, destinations, thread_id}, program, global_name}) => {
+	const reorderedPayload = { message_ids, destinations, thread_id }
+	console.log("Executing", global_name, "with", reorderedPayload)
 	return new Promise((resolve, reject) => {
 		new Promise(resolve => {
 			window[global_name].a(program, (fn1, fn2, fn3, fn4) => {
@@ -46,7 +47,7 @@ const executeScript = ({payload, program, global_name}) => {
 		}).then(fns => {
 			fns.fn1(result => {
 				resolve(result)
-			}, [payload, undefined, undefined, undefined])
+			}, [reorderedPayload, undefined, undefined, undefined])
 		}, reject)
 	})
 }
