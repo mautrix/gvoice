@@ -24,6 +24,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"math/rand/v2"
 	"os"
 	"os/exec"
 	"strconv"
@@ -97,20 +98,12 @@ func (gc *GVClient) runElectron(ctx context.Context) {
 	responseWaiters := exsync.NewMap[string, chan<- electronResponse]()
 	var program, globalName string
 	var reqIDCounter atomic.Int64
-	requestSignature := func(ctx context.Context, threadID string, recipients []string, txnID int64) (string, error) {
-		threadIDHash := sha256.Sum256([]byte(threadID))
-		recipientsHash := sha256.Sum256([]byte(strings.Join(recipients, "|")))
-		messageIDHash := sha256.Sum256([]byte(strconv.FormatInt(txnID, 10)))
+	requestSignatureDirect := func(ctx context.Context, payload map[string]any) (string, error) {
 		reqID := strconv.FormatInt(reqIDCounter.Add(1), 10)
 		waiter := make(chan electronResponse, 1)
 		responseWaiters.Set(reqID, waiter)
 		defer responseWaiters.Delete(reqID)
 		defer close(waiter)
-		payload := map[string]string{
-			"thread_id":    base64.StdEncoding.EncodeToString(threadIDHash[:]),
-			"destinations": base64.StdEncoding.EncodeToString(recipientsHash[:]),
-			"message_ids":  base64.StdEncoding.EncodeToString(messageIDHash[:]),
-		}
 		zerolog.Ctx(ctx).Debug().
 			Str("req_id", reqID).
 			Any("payload", payload).
@@ -144,9 +137,20 @@ func (gc *GVClient) runElectron(ctx context.Context) {
 			return "", ctx.Err()
 		}
 	}
+	requestSignature := func(ctx context.Context, threadID string, recipients []string, txnID int64) (string, error) {
+		threadIDHash := sha256.Sum256([]byte(threadID))
+		recipientsHash := sha256.Sum256([]byte(strings.Join(recipients, "|")))
+		messageIDHash := sha256.Sum256([]byte(strconv.FormatInt(txnID, 10)))
+		payload := map[string]any{
+			"thread_id":    base64.StdEncoding.EncodeToString(threadIDHash[:]),
+			"destinations": base64.StdEncoding.EncodeToString(recipientsHash[:]),
+			"message_ids":  base64.StdEncoding.EncodeToString(messageIDHash[:]),
+		}
+		return requestSignatureDirect(ctx, payload)
+	}
 	funcPtr := (*requestSignatureFunc)(&requestSignature)
 	gc.requestSignature.Store(funcPtr)
-	log.Info().Msg("Electron started")
+	log.Debug().Msg("Electron started")
 Loop:
 	for {
 		var payload map[string]string
@@ -187,7 +191,17 @@ Loop:
 				break Loop
 			}
 		case "ready":
-			log.Info().Msg("Electron Waa generator is ready")
+			log.Debug().Msg("Electron Waa generator is ready, sending ping")
+			go func() {
+				pl, err := requestSignatureDirect(ctx, map[string]any{"blank_payload": true})
+				if err != nil {
+					log.Err(err).Msg("Failed to request signature for ping")
+				} else if err = gc.Client.PingWaa(ctx, pl, rand.Int64N(2000000000)); err != nil {
+					log.Err(err).Msg("Failed to send ping")
+				} else {
+					log.Info().Msg("Waa ping successful")
+				}
+			}()
 		case "result":
 			waiter, ok := responseWaiters.Pop(payload["req_id"])
 			if !ok {

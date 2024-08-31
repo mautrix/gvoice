@@ -36,8 +36,8 @@ const loadScript = ({script_source, checksum}) => {
 	})
 }
 
-const executeScript = ({payload: {message_ids, destinations, thread_id}, program, global_name}) => {
-	const reorderedPayload = { message_ids, destinations, thread_id }
+const executeScript = ({payload: {message_ids, destinations, thread_id, blank_payload}, program, global_name}) => {
+	const reorderedPayload = blank_payload ? undefined : { message_ids, destinations, thread_id }
 	console.log("Executing", global_name, "with", reorderedPayload)
 	return new Promise((resolve, reject) => {
 		new Promise(resolve => {
@@ -45,7 +45,9 @@ const executeScript = ({payload: {message_ids, destinations, thread_id}, program
 				resolve({fn1, fn2, fn3, fn4})
 			}, true, undefined, () => {})
 		}).then(fns => {
+			console.log("Got functions", fns)
 			fns.fn1(result => {
+				console.log("Got result", result)
 				resolve(result)
 			}, [reorderedPayload, undefined, undefined, undefined])
 		}, reject)

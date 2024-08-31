@@ -6,8 +6,18 @@ message ReqCreateWaa {
     string requestKey = 1;
 }
 
+message ReqPingWaa {
+    string requestKey = 1;
+    string payload = 2;
+    int64 i1 = 3;
+    int64 i2 = 4;
+}
+
 message RespCreateWaa {
     CreatedWaa waa = 1;
+}
+
+message RespPingWaa {
 }
 
 message CreatedWaa {

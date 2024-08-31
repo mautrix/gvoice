@@ -214,3 +214,15 @@ func (c *Client) CreateWaa(ctx context.Context) (*gvproto.CreatedWaa, error) {
 	)
 	return resp.GetWaa(), err
 }
+
+func (c *Client) PingWaa(ctx context.Context, sig string, val int64) error {
+	_, err := ReadProtoResponse[*gvproto.RespPingWaa](
+		c.MakeRequest(ctx, http.MethodPost, EndpointPingWaa, nil, nil, &gvproto.ReqPingWaa{
+			RequestKey: WaaRequestKey,
+			Payload:    sig,
+			I1:         72,
+			I2:         val,
+		}),
+	)
+	return err
+}

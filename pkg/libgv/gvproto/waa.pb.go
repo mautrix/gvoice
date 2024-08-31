@@ -70,6 +70,77 @@ func (x *ReqCreateWaa) GetRequestKey() string {
 	return ""
 }
 
+type ReqPingWaa struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	RequestKey string `protobuf:"bytes,1,opt,name=requestKey,proto3" json:"requestKey,omitempty"`
+	Payload    string `protobuf:"bytes,2,opt,name=payload,proto3" json:"payload,omitempty"`
+	I1         int64  `protobuf:"varint,3,opt,name=i1,proto3" json:"i1,omitempty"`
+	I2         int64  `protobuf:"varint,4,opt,name=i2,proto3" json:"i2,omitempty"`
+}
+
+func (x *ReqPingWaa) Reset() {
+	*x = ReqPingWaa{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_waa_proto_msgTypes[1]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ReqPingWaa) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReqPingWaa) ProtoMessage() {}
+
+func (x *ReqPingWaa) ProtoReflect() protoreflect.Message {
+	mi := &file_waa_proto_msgTypes[1]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReqPingWaa.ProtoReflect.Descriptor instead.
+func (*ReqPingWaa) Descriptor() ([]byte, []int) {
+	return file_waa_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *ReqPingWaa) GetRequestKey() string {
+	if x != nil {
+		return x.RequestKey
+	}
+	return ""
+}
+
+func (x *ReqPingWaa) GetPayload() string {
+	if x != nil {
+		return x.Payload
+	}
+	return ""
+}
+
+func (x *ReqPingWaa) GetI1() int64 {
+	if x != nil {
+		return x.I1
+	}
+	return 0
+}
+
+func (x *ReqPingWaa) GetI2() int64 {
+	if x != nil {
+		return x.I2
+	}
+	return 0
+}
+
 type RespCreateWaa struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -81,7 +152,7 @@ type RespCreateWaa struct {
 func (x *RespCreateWaa) Reset() {
 	*x = RespCreateWaa{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_waa_proto_msgTypes[1]
+		mi := &file_waa_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -94,7 +165,7 @@ func (x *RespCreateWaa) String() string {
 func (*RespCreateWaa) ProtoMessage() {}
 
 func (x *RespCreateWaa) ProtoReflect() protoreflect.Message {
-	mi := &file_waa_proto_msgTypes[1]
+	mi := &file_waa_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -107,7 +178,7 @@ func (x *RespCreateWaa) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RespCreateWaa.ProtoReflect.Descriptor instead.
 func (*RespCreateWaa) Descriptor() ([]byte, []int) {
-	return file_waa_proto_rawDescGZIP(), []int{1}
+	return file_waa_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *RespCreateWaa) GetWaa() *CreatedWaa {
@@ -115,6 +186,44 @@ func (x *RespCreateWaa) GetWaa() *CreatedWaa {
 		return x.Waa
 	}
 	return nil
+}
+
+type RespPingWaa struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *RespPingWaa) Reset() {
+	*x = RespPingWaa{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_waa_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *RespPingWaa) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RespPingWaa) ProtoMessage() {}
+
+func (x *RespPingWaa) ProtoReflect() protoreflect.Message {
+	mi := &file_waa_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RespPingWaa.ProtoReflect.Descriptor instead.
+func (*RespPingWaa) Descriptor() ([]byte, []int) {
+	return file_waa_proto_rawDescGZIP(), []int{3}
 }
 
 type CreatedWaa struct {
@@ -133,7 +242,7 @@ type CreatedWaa struct {
 func (x *CreatedWaa) Reset() {
 	*x = CreatedWaa{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_waa_proto_msgTypes[2]
+		mi := &file_waa_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -146,7 +255,7 @@ func (x *CreatedWaa) String() string {
 func (*CreatedWaa) ProtoMessage() {}
 
 func (x *CreatedWaa) ProtoReflect() protoreflect.Message {
-	mi := &file_waa_proto_msgTypes[2]
+	mi := &file_waa_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -159,7 +268,7 @@ func (x *CreatedWaa) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreatedWaa.ProtoReflect.Descriptor instead.
 func (*CreatedWaa) Descriptor() ([]byte, []int) {
-	return file_waa_proto_rawDescGZIP(), []int{2}
+	return file_waa_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *CreatedWaa) GetRespID() string {
@@ -208,7 +317,7 @@ type CreatedWaa_InterpreterURL struct {
 func (x *CreatedWaa_InterpreterURL) Reset() {
 	*x = CreatedWaa_InterpreterURL{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_waa_proto_msgTypes[3]
+		mi := &file_waa_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -221,7 +330,7 @@ func (x *CreatedWaa_InterpreterURL) String() string {
 func (*CreatedWaa_InterpreterURL) ProtoMessage() {}
 
 func (x *CreatedWaa_InterpreterURL) ProtoReflect() protoreflect.Message {
-	mi := &file_waa_proto_msgTypes[3]
+	mi := &file_waa_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -234,7 +343,7 @@ func (x *CreatedWaa_InterpreterURL) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreatedWaa_InterpreterURL.ProtoReflect.Descriptor instead.
 func (*CreatedWaa_InterpreterURL) Descriptor() ([]byte, []int) {
-	return file_waa_proto_rawDescGZIP(), []int{2, 0}
+	return file_waa_proto_rawDescGZIP(), []int{4, 0}
 }
 
 func (x *CreatedWaa_InterpreterURL) GetURL() string {
@@ -261,16 +370,18 @@ func file_waa_proto_rawDescGZIP() []byte {
 	return file_waa_proto_rawDescData
 }
 
-var file_waa_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_waa_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_waa_proto_goTypes = []any{
 	(*ReqCreateWaa)(nil),              // 0: waa.ReqCreateWaa
-	(*RespCreateWaa)(nil),             // 1: waa.RespCreateWaa
-	(*CreatedWaa)(nil),                // 2: waa.CreatedWaa
-	(*CreatedWaa_InterpreterURL)(nil), // 3: waa.CreatedWaa.InterpreterURL
+	(*ReqPingWaa)(nil),                // 1: waa.ReqPingWaa
+	(*RespCreateWaa)(nil),             // 2: waa.RespCreateWaa
+	(*RespPingWaa)(nil),               // 3: waa.RespPingWaa
+	(*CreatedWaa)(nil),                // 4: waa.CreatedWaa
+	(*CreatedWaa_InterpreterURL)(nil), // 5: waa.CreatedWaa.InterpreterURL
 }
 var file_waa_proto_depIdxs = []int32{
-	2, // 0: waa.RespCreateWaa.waa:type_name -> waa.CreatedWaa
-	3, // 1: waa.CreatedWaa.interpreterURL:type_name -> waa.CreatedWaa.InterpreterURL
+	4, // 0: waa.RespCreateWaa.waa:type_name -> waa.CreatedWaa
+	5, // 1: waa.CreatedWaa.interpreterURL:type_name -> waa.CreatedWaa.InterpreterURL
 	2, // [2:2] is the sub-list for method output_type
 	2, // [2:2] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
@@ -297,7 +408,7 @@ func file_waa_proto_init() {
 			}
 		}
 		file_waa_proto_msgTypes[1].Exporter = func(v any, i int) any {
-			switch v := v.(*RespCreateWaa); i {
+			switch v := v.(*ReqPingWaa); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -309,7 +420,7 @@ func file_waa_proto_init() {
 			}
 		}
 		file_waa_proto_msgTypes[2].Exporter = func(v any, i int) any {
-			switch v := v.(*CreatedWaa); i {
+			switch v := v.(*RespCreateWaa); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -321,6 +432,30 @@ func file_waa_proto_init() {
 			}
 		}
 		file_waa_proto_msgTypes[3].Exporter = func(v any, i int) any {
+			switch v := v.(*RespPingWaa); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_waa_proto_msgTypes[4].Exporter = func(v any, i int) any {
+			switch v := v.(*CreatedWaa); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_waa_proto_msgTypes[5].Exporter = func(v any, i int) any {
 			switch v := v.(*CreatedWaa_InterpreterURL); i {
 			case 0:
 				return &v.state
@@ -339,7 +474,7 @@ func file_waa_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_waa_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

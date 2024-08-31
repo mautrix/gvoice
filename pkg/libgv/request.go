@@ -46,6 +46,9 @@ func SAPISIDHash(origin, sapisid string) string {
 }
 
 func (c *Client) prepareHeaders(req *http.Request) {
+	req.Header.Set("Sec-Ch-Ua", CHUserAgent)
+	req.Header.Set("Sec-Ch-Ua-Platform", CHPlatform)
+	req.Header.Set("Sec-Ch-Ua-Mobile", "?0")
 	req.Header.Set("User-Agent", UserAgent)
 	req.Header.Set("X-Goog-AuthUser", c.AuthUser)
 	if req.URL.Host == APIDomain {

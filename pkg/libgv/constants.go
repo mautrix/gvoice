@@ -21,6 +21,8 @@ import (
 )
 
 const UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+const CHUserAgent = `"Chromium";v="128", "Not;A=Brand";v="24", "Google Chrome";v="128"`
+const CHPlatform = `"Linux"`
 const ClientVersion = "665865172"
 const JavaScriptUserAgent = "google-api-javascript-client/1.1.0"
 const WaaXUserAgent = "grpc-web-javascript/0.1"
@@ -79,4 +81,5 @@ const (
 
 	WaaBaseURL        = "https://" + WaaDomain + "/$rpc/google.internal.waa.v1.Waa"
 	EndpointCreateWaa = WaaBaseURL + "/Create"
+	EndpointPingWaa   = WaaBaseURL + "/Ping"
 )
