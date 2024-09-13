@@ -36,38 +36,40 @@ import (
 	"go.mau.fi/util/exsync"
 )
 
-//go:embed electron.mjs
-var electronScript string
+//go:embed puppeteer.js
+var puppeteerScript string
 
 type requestSignatureFunc func(ctx context.Context, threadID string, recipients []string, txnID int64) (string, error)
 
-type electronResponse struct {
+type puppeteerResponse struct {
 	err  error
 	resp string
 }
 
-func (gc *GVClient) runElectron(ctx context.Context) {
-	log := gc.UserLogin.Log.With().Str("component", "electron").Logger()
+func (gc *GVClient) runPuppeteer(ctx context.Context) {
+	log := gc.UserLogin.Log.With().Str("component", "puppeteer").Logger()
 	ctx = log.WithContext(ctx)
-	electron, _ := exec.LookPath("electron")
-	if electron == "" {
-		log.Debug().Msg("Electron not installed")
+	node, _ := exec.LookPath("node")
+	if node == "" {
+		log.Debug().Msg("Node.js not installed")
 		return
 	}
-	tmp, err := os.CreateTemp("", "mautrix-gvoice-electron-*.mjs")
+	tmp, err := os.CreateTemp("", "mautrix-gvoice-puppeteer-*.js")
 	if err != nil {
 		log.Err(err).Msg("Failed to create temporary file")
 		return
 	}
 	defer os.Remove(tmp.Name())
-	_, err = tmp.WriteString(electronScript)
+	_, err = tmp.WriteString(puppeteerScript)
 	if err != nil {
 		_ = tmp.Close()
-		log.Err(err).Msg("Failed to write electron script")
+		log.Err(err).Msg("Failed to write puppeteer script")
 		return
 	}
 	_ = tmp.Close()
-	cmd := exec.CommandContext(ctx, electron, tmp.Name())
+	cmd := exec.CommandContext(ctx, node, tmp.Name())
+	// Optionally, you can set environment variables if needed
+	// cmd.Env = append(os.Environ(), "ENV_VAR=value")
 	cmd.Stderr = log.With().Str("stream", "stderr").Logger()
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -85,7 +87,7 @@ func (gc *GVClient) runElectron(ctx context.Context) {
 	defer gc.stopWait.Done()
 	err = cmd.Start()
 	if err != nil {
-		log.Err(err).Msg("Failed to start electron")
+		log.Err(err).Msg("Failed to start Puppeteer")
 		return
 	}
 	kill := func() {
@@ -95,12 +97,12 @@ func (gc *GVClient) runElectron(ctx context.Context) {
 	}
 	stdinJSON := json.NewEncoder(stdin)
 	stdoutJSON := json.NewDecoder(stdout)
-	responseWaiters := exsync.NewMap[string, chan<- electronResponse]()
+	responseWaiters := exsync.NewMap[string, chan<- puppeteerResponse]()
 	var program, globalName string
 	var reqIDCounter atomic.Int64
 	requestSignatureDirect := func(ctx context.Context, payload map[string]any) (string, error) {
 		reqID := strconv.FormatInt(reqIDCounter.Add(1), 10)
-		waiter := make(chan electronResponse, 1)
+		waiter := make(chan puppeteerResponse, 1)
 		responseWaiters.Set(reqID, waiter)
 		defer responseWaiters.Delete(reqID)
 		defer close(waiter)
@@ -150,22 +152,22 @@ func (gc *GVClient) runElectron(ctx context.Context) {
 	}
 	funcPtr := (*requestSignatureFunc)(&requestSignature)
 	gc.requestSignature.Store(funcPtr)
-	log.Debug().Msg("Electron started")
+	log.Debug().Msg("Puppeteer started")
 Loop:
 	for {
 		var payload map[string]string
 		err = stdoutJSON.Decode(&payload)
 		if errors.Is(err, io.EOF) {
-			log.Debug().Msg("Electron stdout closed")
+			log.Debug().Msg("Puppeteer stdout closed")
 			break
 		} else if err != nil {
-			log.Err(err).Msg("Failed to decode electron payload")
+			log.Err(err).Msg("Failed to decode Puppeteer payload")
 			kill()
 			break
 		}
 		switch payload["status"] {
 		case "waiting_for_init":
-			log.Debug().Msg("Creating Waa payload for Electron")
+			log.Debug().Msg("Creating Waa payload for Puppeteer")
 			waa, err := gc.Client.CreateWaa(ctx)
 			if err != nil {
 				log.Err(err).Msg("Failed to create Waa payload")
@@ -191,12 +193,12 @@ Loop:
 				break Loop
 			}
 		case "ready":
-			log.Debug().Msg("Electron Waa generator is ready, sending ping")
+			log.Debug().Msg("Puppeteer Waa generator is ready, sending ping")
 			go func() {
 				pl, err := requestSignatureDirect(ctx, map[string]any{"blank_payload": true})
 				if err != nil {
 					log.Err(err).Msg("Failed to request signature for ping")
-				} else if err = gc.Client.PingWaa(ctx, pl, rand.Int64N(2000000000)); err != nil {
+				} else if err = gc.Client.PingWaa(ctx, pl, rand.Int63n(2000000000)); err != nil {
 					log.Err(err).Msg("Failed to send ping")
 				} else {
 					log.Info().Msg("Waa ping successful")
@@ -205,10 +207,10 @@ Loop:
 		case "result":
 			waiter, ok := responseWaiters.Pop(payload["req_id"])
 			if !ok {
-				log.Warn().Str("req_id", payload["req_id"]).Msg("Unknown response from electron")
+				log.Warn().Str("req_id", payload["req_id"]).Msg("Unknown response from Puppeteer")
 			} else {
 				select {
-				case waiter <- electronResponse{resp: payload["response"]}:
+				case waiter <- puppeteerResponse{resp: payload["response"]}:
 				default:
 					log.Warn().Str("req_id", payload["req_id"]).Msg("Response channel didn't accept result")
 				}
@@ -216,24 +218,24 @@ Loop:
 		case "error":
 			waiter, ok := responseWaiters.Pop(payload["req_id"])
 			if !ok {
-				log.Warn().Any("payload", payload).Msg("Unknown error response from electron")
+				log.Warn().Any("payload", payload).Msg("Unknown error response from Puppeteer")
 			} else {
 				select {
-				case waiter <- electronResponse{err: errors.New(payload["error"])}:
+				case waiter <- puppeteerResponse{err: errors.New(payload["error"])}:
 				default:
 					log.Warn().Str("req_id", payload["req_id"]).Msg("Response channel didn't accept error result")
 				}
 			}
 		default:
-			log.Warn().Any("data", payload).Msg("Unknown payload from electron")
+			log.Warn().Any("data", payload).Msg("Unknown payload from Puppeteer")
 		}
 	}
 	_ = os.Remove(tmp.Name())
 	gc.requestSignature.CompareAndSwap(funcPtr, nil)
 	err = cmd.Wait()
 	if err != nil && !errors.Is(err, context.Canceled) && ctx.Err() == nil {
-		log.Err(err).Msg("Electron exited with error")
+		log.Err(err).Msg("Puppeteer exited with error")
 	} else {
-		log.Debug().Msg("Electron exited")
+		log.Debug().Msg("Puppeteer exited")
 	}
 }
