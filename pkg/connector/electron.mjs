@@ -1,6 +1,5 @@
 // mautrix-gvoice - A Matrix-Google Voice puppeting bridge.
-// Copyright (C) 2024 Tulir Asokan
-//
+// Copyright ()
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -14,124 +13,128 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import {app, BrowserWindow} from "electron"
+const puppeteer = require('puppeteer');
 
-const loadScript = ({script_source, checksum}) => {
-	return new Promise((resolve, reject) => {
-		console.log("Loading script from", script_source)
-		const scriptTag = document.createElement("script")
-		scriptTag.setAttribute("src", script_source)
-		// TODO is there a way to do integrity without messing with CORS?
-		// scriptTag.setAttribute("integrity", `sha256-${checksum}`)
-		// scriptTag.setAttribute("crossorigin", "")
-		scriptTag.onload = () => {
-			console.log("Script loaded")
-			resolve()
-		}
-		scriptTag.onerror = err => {
-			console.error("Failed to load script:", err)
-			reject(err)
-		}
-		document.head.appendChild(scriptTag)
-	})
-}
+let allowedScriptSource = "";
+let inited = false;
+let browser, page;
 
-const executeScript = ({payload: {message_ids, destinations, thread_id, blank_payload}, program, global_name}) => {
-	const reorderedPayload = blank_payload ? undefined : { message_ids, destinations, thread_id }
-	console.log("Executing", global_name, "with", reorderedPayload)
-	return new Promise((resolve, reject) => {
-		new Promise(resolve => {
-			window[global_name].a(program, (fn1, fn2, fn3, fn4) => {
-				resolve({fn1, fn2, fn3, fn4})
-			}, true, undefined, () => {})
-		}).then(fns => {
-			console.log("Got functions", fns)
-			fns.fn1(result => {
-				console.log("Got result", result)
-				resolve(result)
-			}, [reorderedPayload, undefined, undefined, undefined])
-		}, reject)
-	})
-}
+const DEBUG_MODE = process.env.MAUTRIX_GVOICE_PUPPETEER_DEBUG === "true";
 
-let allowedScriptSource = ""
-let inited = false
-let window
+const loadScript = async ({ script_source, checksum }) => {
+    console.log("Loading script from", script_source);
+    // Bypass CSP
+    await page.setBypassCSP(true);
+    // Load the script by injecting it into the page
+    await page.addScriptTag({ url: script_source });
+    console.log("Script loaded");
+};
+
+const executeScript = async ({ payload, program, global_name }) => {
+    const reorderedPayload = payload.blank_payload ? undefined : {
+        message_ids: payload.message_ids,
+        destinations: payload.destinations,
+        thread_id: payload.thread_id
+    };
+    console.log("Executing", global_name, "with", reorderedPayload);
+    const response = await page.evaluate(({ global_name, program, reorderedPayload }) => {
+        return new Promise((resolve, reject) => {
+            new Promise(resolve => {
+                window[global_name].a(program, (fn1, fn2, fn3, fn4) => {
+                    resolve({ fn1, fn2, fn3, fn4 });
+                }, true, undefined, () => { });
+            }).then(fns => {
+                console.log("Got functions", fns);
+                fns.fn1(result => {
+                    console.log("Got result", result);
+                    resolve(result);
+                }, [reorderedPayload, undefined, undefined, undefined]);
+            }, reject);
+        });
+    }, { global_name, program, reorderedPayload });
+    return response;
+};
 
 const processIPC = async data => {
-	if (!inited) {
-		if (!data.script_source || !data.checksum) {
-			throw new Error("invalid init data")
-		}
-		inited = true
-		if (data.script_source.startsWith("//")) {
-			data.script_source = "https:" + data.script_source
-		}
-		allowedScriptSource = data.script_source
-		await window.webContents.executeJavaScript(`(${loadScript.toString()})(${JSON.stringify(data)})`)
-		return {status: "ready"}
-	} else if (!data.global_name || !data.program || !data.payload) {
-		throw new Error("invalid request data")
-	} else {
-		const response = await window.webContents.executeJavaScript(`(${executeScript.toString()})(${JSON.stringify(data)})`)
-		return {status: "result", response}
-	}
-}
+    if (!inited) {
+        if (!data.script_source || !data.checksum) {
+            throw new Error("invalid init data");
+        }
+        inited = true;
+        if (data.script_source.startsWith("//")) {
+            data.script_source = "https:" + data.script_source;
+        }
+        allowedScriptSource = data.script_source;
 
-const DEBUG_MODE = process.env.MAUTRIX_GVOICE_ELECTRON_DEBUG === "true"
+        // Launch Puppeteer browser and page
+        browser = await puppeteer.launch({
+            headless: !DEBUG_MODE,
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
+        page = await browser.newPage();
 
-const staticAllowedURLs = ["https://voice.google.com/", "https://voice.google.com/u/0/about", "https://voice.google.com/about"]
+        // Set user agent if needed
+        const userAgent = (await browser.userAgent()).replace(/HeadlessChrome\/[^ ]+ /, "");
+        await page.setUserAgent(userAgent);
 
-app.whenReady().then(() => {
-	window = new BrowserWindow({
-		width: 1280,
-		height: 720,
-		show: DEBUG_MODE,
-	})
-	window.webContents.session.webRequest.onBeforeRequest((details, callback) => {
-		if (details.url === allowedScriptSource || staticAllowedURLs.includes(details.url) || details.url.startsWith("devtools://")) {
-			callback({cancel: false})
-		} else {
-			callback({cancel: true})
-		}
-	})
-	window.webContents.session.webRequest.onHeadersReceived((details, callback) => {
-		if (details.responseHeaders["content-security-policy"]) {
-			callback({
-				responseHeaders: {
-					...details.responseHeaders,
-					"content-security-policy": "",
-				}
-			})
-		} else {
-			callback({})
-		}
-	})
+        // Intercept requests to block unwanted URLs
+        await page.setRequestInterception(true);
+        page.on('request', request => {
+            const url = request.url();
+            if (url === allowedScriptSource || url.startsWith("https://voice.google.com/") || url.startsWith("devtools://")) {
+                request.continue();
+            } else {
+                request.abort();
+            }
+        });
 
-	process.stdin.setEncoding("utf8")
-	process.stdin.on("data", async chunk => {
-		let data
-		try {
-			data = JSON.parse(chunk)
-		} catch (err) {
-			console.error("Failed to parse chunk:", chunk)
-			return
-		}
-		processIPC(data).then(
-			resp => console.log(JSON.stringify({...resp, req_id: data.req_id})),
-			err => console.log(JSON.stringify({
-				error: err.toString().replace(/^Error: /, ""),
-				status: "error",
-				req_id: data.req_id,
-			})),
-		)
-	})
-	if (DEBUG_MODE) {
-		window.webContents.openDevTools()
-	}
-	window.loadURL("https://voice.google.com/about", {
-		userAgent: window.webContents.session.getUserAgent().replace(/Electron\/[^ ]+ /, ""),
-	}).then(() => {
-		console.log(JSON.stringify({status: "waiting_for_init"}))
-	})
-})
+        // Bypass CSP
+        await page.setBypassCSP(true);
+
+        await page.goto("https://voice.google.com/about", {
+            waitUntil: 'networkidle2'
+        });
+        await loadScript({ script_source: data.script_source, checksum: data.checksum });
+        console.log(JSON.stringify({ status: "waiting_for_init" }));
+    } else if (!data.global_name || !data.program || !data.payload) {
+        throw new Error("invalid request data");
+    } else {
+        const response = await executeScript(data);
+        return { status: "result", response };
+    }
+};
+
+// Start processing IPC
+process.stdin.setEncoding('utf8');
+let dataBuffer = '';
+process.stdin.on('data', async chunk => {
+    dataBuffer += chunk;
+    let boundary = dataBuffer.indexOf('\n');
+    while (boundary !== -1) {
+        const input = dataBuffer.slice(0, boundary);
+        dataBuffer = dataBuffer.slice(boundary + 1);
+        let data;
+        try {
+            data = JSON.parse(input);
+        } catch (err) {
+            console.error("Failed to parse chunk:", input);
+            boundary = dataBuffer.indexOf('\n');
+            continue;
+        }
+        processIPC(data).then(
+            resp => console.log(JSON.stringify({ ...resp, req_id: data.req_id })),
+            err => console.log(JSON.stringify({
+                error: err.toString().replace(/^Error: /, ""),
+                status: "error",
+                req_id: data.req_id,
+            })),
+        );
+        boundary = dataBuffer.indexOf('\n');
+    }
+});
+
+process.on('exit', async () => {
+    if (browser) {
+        await browser.close();
+    }
+});
