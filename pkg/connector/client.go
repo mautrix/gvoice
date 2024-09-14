@@ -94,7 +94,7 @@ func (gc *GVClient) connectRealtime() {
 
 	gc.loadInitialContacts(gc.UserLogin.Log.With().Str("action", "load initial contacts").Logger().WithContext(ctx))
 	go gc.fetchNewMessagesLoop(gc.UserLogin.Log.With().Str("component", "fetch messages loop").Logger().WithContext(ctx))
-	go gc.runElectron(ctx)
+	go gc.runPuppeteer(ctx)
 
 	log := gc.UserLogin.Log.With().Str("component", "realtime channel").Logger()
 	ctx = log.WithContext(ctx)
