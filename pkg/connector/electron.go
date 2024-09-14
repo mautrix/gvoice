@@ -200,7 +200,7 @@ Loop:
 				pl, err := requestSignatureDirect(ctx, map[string]any{"blank_payload": true})
 				if err != nil {
 					log.Err(err).Msg("Failed to request signature for ping")
-				} else if err = gc.Client.PingWaa(ctx, pl, rand.Int63n(2000000000)); err != nil {
+				} else if err = gc.Client.PingWaa(ctx, pl, rand.Int64N(2000000000)); err != nil {
 					log.Err(err).Msg("Failed to send ping")
 				} else {
 					log.Info().Msg("Waa ping successful")
