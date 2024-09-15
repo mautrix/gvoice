@@ -59,7 +59,7 @@ let inited = false
 let window
 
 const processIPC = async data => {
-	if (!inited) {
+	if (!inited || data.script_source) {
 		if (!data.script_source || !data.checksum) {
 			throw new Error("invalid init data")
 		}

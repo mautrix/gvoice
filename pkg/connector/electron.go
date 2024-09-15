@@ -23,6 +23,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"math/rand/v2"
 	"os"
@@ -45,6 +46,8 @@ type electronResponse struct {
 	err  error
 	resp string
 }
+
+const WaaExpiry = 1 * time.Hour
 
 func (gc *GVClient) runElectron(ctx context.Context) {
 	log := gc.UserLogin.Log.With().Str("component", "electron").Logger()
@@ -97,6 +100,42 @@ func (gc *GVClient) runElectron(ctx context.Context) {
 	stdoutJSON := json.NewDecoder(stdout)
 	responseWaiters := exsync.NewMap[string, chan<- electronResponse]()
 	var program, globalName string
+	var scriptChecksum string
+	var initedAt time.Time
+	doInit := func(ctx context.Context) error {
+		log.Debug().Msg("Creating Waa payload for Electron")
+		waa, err := gc.Client.CreateWaa(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to create Waa payload: %w", err)
+		}
+		initedAt = time.Now()
+		program = waa.GetProgram()
+		globalName = waa.GetGlobalName()
+		hash, _ := base64.RawURLEncoding.DecodeString(waa.GetInterpreterHash())
+		newChecksum := base64.StdEncoding.EncodeToString(hash)
+		if scriptChecksum != newChecksum {
+			scriptChecksum = newChecksum
+			log.Debug().
+				Str("script_source", waa.GetInterpreterURL().GetURL()).
+				Str("global_name", globalName).
+				Str("script_checksum", scriptChecksum).
+				Msg("Waa payload created")
+			err = stdinJSON.Encode(map[string]string{
+				"script_source": waa.GetInterpreterURL().GetURL(),
+				"checksum":      scriptChecksum,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to send Waa init payload: %w", err)
+			}
+		} else {
+			log.Debug().
+				Str("script_source", waa.GetInterpreterURL().GetURL()).
+				Str("global_name", globalName).
+				Str("script_checksum", scriptChecksum).
+				Msg("Waa payload unchanged")
+		}
+		return nil
+	}
 	var reqIDCounter atomic.Int64
 	requestSignatureDirect := func(ctx context.Context, payload map[string]any) (string, error) {
 		reqID := strconv.FormatInt(reqIDCounter.Add(1), 10)
@@ -138,6 +177,12 @@ func (gc *GVClient) runElectron(ctx context.Context) {
 		}
 	}
 	requestSignature := func(ctx context.Context, threadID string, recipients []string, txnID int64) (string, error) {
+		if time.Since(initedAt) > WaaExpiry {
+			err = doInit(ctx)
+			if err != nil {
+				return "", fmt.Errorf("failed to reinit waa: %w", err)
+			}
+		}
 		threadIDHash := sha256.Sum256([]byte(threadID))
 		recipientsHash := sha256.Sum256([]byte(strings.Join(recipients, "|")))
 		messageIDHash := sha256.Sum256([]byte(strconv.FormatInt(txnID, 10)))
@@ -165,28 +210,9 @@ Loop:
 		}
 		switch payload["status"] {
 		case "waiting_for_init":
-			log.Debug().Msg("Creating Waa payload for Electron")
-			waa, err := gc.Client.CreateWaa(ctx)
+			err = doInit(ctx)
 			if err != nil {
-				log.Err(err).Msg("Failed to create Waa payload")
-				kill()
-				break Loop
-			}
-			program = waa.GetProgram()
-			globalName = waa.GetGlobalName()
-			hash, _ := base64.RawURLEncoding.DecodeString(waa.GetInterpreterHash())
-			checksum := base64.StdEncoding.EncodeToString(hash)
-			log.Debug().
-				Str("script_source", waa.GetInterpreterURL().GetURL()).
-				Str("global_name", globalName).
-				Str("script_checksum", checksum).
-				Msg("Waa payload created")
-			err = stdinJSON.Encode(map[string]string{
-				"script_source": waa.GetInterpreterURL().GetURL(),
-				"checksum":      checksum,
-			})
-			if err != nil {
-				log.Err(err).Msg("Failed to send Waa init payload")
+				log.Err(err).Msg("Failed to init Waa")
 				kill()
 				break Loop
 			}
