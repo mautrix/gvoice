@@ -7,11 +7,11 @@ toolchain go1.23.1
 require (
 	github.com/rs/zerolog v1.33.0
 	github.com/stretchr/testify v1.9.0
-	go.mau.fi/util v0.7.1-0.20240913091524-7617daa66719
+	go.mau.fi/util v0.8.0
 	golang.org/x/time v0.6.0
 	google.golang.org/protobuf v1.34.2
 	gopkg.in/yaml.v3 v3.0.1
-	maunium.net/go/mautrix v0.20.1-0.20240913095532-e12ecbe82d36
+	maunium.net/go/mautrix v0.21.0
 )
 
 require (
