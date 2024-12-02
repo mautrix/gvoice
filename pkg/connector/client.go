@@ -71,7 +71,7 @@ func (gv *GVConnector) LoadUserLogin(ctx context.Context, login *bridgev2.UserLo
 
 var _ bridgev2.NetworkAPI = (*GVClient)(nil)
 
-func (gc *GVClient) Connect(ctx context.Context) error {
+func (gc *GVClient) Connect(ctx context.Context) {
 	_, _ = gc.Main.Bridge.GetGhostByID(ctx, "")
 	_, err := gc.Client.GetAccount(ctx)
 	if err != nil {
@@ -81,10 +81,9 @@ func (gc *GVClient) Connect(ctx context.Context) error {
 			Error:      "gv-connect-error",
 			Info:       map[string]any{"go_error": err.Error()},
 		})
-		return nil
+		return
 	}
 	go gc.connectRealtime()
-	return nil
 }
 
 func (gc *GVClient) connectRealtime() {
