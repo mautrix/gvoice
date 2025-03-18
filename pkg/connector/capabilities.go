@@ -32,22 +32,28 @@ func (gv *GVConnector) GetCapabilities() *bridgev2.NetworkGeneralCapabilities {
 	return generalCaps
 }
 
-var roomCaps = &bridgev2.NetworkRoomCapabilities{
-	Captions:         true,
-	MaxTextLength:    160,
-	MaxCaptionLength: 0,
-	DefaultFileRestriction: &bridgev2.FileRestriction{
-		MaxSize:   0,
-		MimeTypes: []string{},
-	},
-	Files: map[event.MessageType]bridgev2.FileRestriction{
+func (gv *GVConnector) GetBridgeInfoVersion() (info, caps int) {
+	return 1, 1
+}
+
+var roomCaps = &event.RoomFeatures{
+	ID:            "fi.mau.gvoice.capabilities.2025_03_18",
+	MaxTextLength: 160,
+	File: map[event.MessageType]*event.FileFeatures{
 		event.MsgImage: {
-			MaxSize:   2 * 1024 * 1024,
-			MimeTypes: []string{"image/png", "image/jpeg", "image/bmp", "image/tiff"},
+			MaxSize:          2 * 1024 * 1024,
+			Caption:          event.CapLevelFullySupported,
+			MaxCaptionLength: 160,
+			MimeTypes: map[string]event.CapabilitySupportLevel{
+				"image/png":  event.CapLevelFullySupported,
+				"image/jpeg": event.CapLevelFullySupported,
+				"image/bmp":  event.CapLevelFullySupported,
+				"image/tiff": event.CapLevelFullySupported,
+			},
 		},
 	},
 }
 
-func (gc *GVClient) GetCapabilities(ctx context.Context, portal *bridgev2.Portal) *bridgev2.NetworkRoomCapabilities {
+func (gc *GVClient) GetCapabilities(ctx context.Context, portal *bridgev2.Portal) *event.RoomFeatures {
 	return roomCaps
 }

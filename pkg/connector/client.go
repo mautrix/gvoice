@@ -25,8 +25,8 @@ import (
 
 	"github.com/rs/zerolog"
 	"golang.org/x/time/rate"
-	"maunium.net/go/mautrix/bridge/status"
 	"maunium.net/go/mautrix/bridgev2"
+	"maunium.net/go/mautrix/bridgev2/status"
 
 	"go.mau.fi/mautrix-gvoice/pkg/libgv"
 )
