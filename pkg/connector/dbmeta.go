@@ -30,7 +30,9 @@ func (gv *GVConnector) GetDBMetaTypes() database.MetaTypes {
 		},
 		Message: nil,
 		UserLogin: func() any {
-			return &UserLoginMetadata{}
+			return &UserLoginMetadata{
+				Cookies: make(map[string]string),
+			}
 		},
 	}
 }

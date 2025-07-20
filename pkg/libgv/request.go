@@ -46,6 +46,9 @@ func SAPISIDHash(origin, sapisid string) string {
 }
 
 func (c *Client) prepareHeaders(req *http.Request) {
+	if c == nil {
+		return
+	}
 	req.Header.Set("Sec-Ch-Ua", CHUserAgent)
 	req.Header.Set("Sec-Ch-Ua-Platform", CHPlatform)
 	req.Header.Set("Sec-Ch-Ua-Mobile", "?0")
@@ -84,13 +87,15 @@ func (c *Client) prepareHeaders(req *http.Request) {
 	}
 	c.cookiesLock.RLock()
 	defer c.cookiesLock.RUnlock()
-	for name, value := range c.cookies {
-		req.AddCookie(&http.Cookie{
-			Name:  name,
-			Value: value,
-		})
-		if name == "SAPISID" {
-			req.Header.Set("Authorization", SAPISIDHash(Origin, value))
+	if c.cookies != nil {
+		for name, value := range c.cookies {
+			req.AddCookie(&http.Cookie{
+				Name:  name,
+				Value: value,
+			})
+			if name == "SAPISID" {
+				req.Header.Set("Authorization", SAPISIDHash(Origin, value))
+			}
 		}
 	}
 }
@@ -108,12 +113,21 @@ type ResponseError struct {
 }
 
 func (re *ResponseError) Error() string {
+	if re == nil {
+		return "response error object is nil - this indicates a programming error in error handling"
+	}
+	if re.Resp == nil {
+		return "request failed with no response - check network connectivity and authentication"
+	}
 	return fmt.Sprintf("unexpected status code %d", re.Resp.StatusCode)
 }
 
 const MaxRetryCount = 10
 
 func (c *Client) MakeRequest(ctx context.Context, method, baseAddr string, query url.Values, headers http.Header, body any) (*http.Response, error) {
+	if c == nil {
+		return nil, fmt.Errorf("google Voice client is not initialized - ensure you call NewClient() with valid cookies before making requests")
+	}
 	parsedAddr, err := url.Parse(baseAddr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse URL: %w", err)
@@ -219,6 +233,9 @@ func (c *Client) makeRequestDirect(ctx context.Context, method string, parsedAdd
 	}
 	req.Header = headers.Clone()
 	c.prepareHeaders(req)
+	if c.HTTP == nil {
+		return req, nil, fmt.Errorf("HTTP client is not configured - this indicates a programming error in client initialization")
+	}
 	resp, err := c.HTTP.Do(req)
 	if err != nil {
 		return req, nil, fmt.Errorf("failed to send request: %w", err)
