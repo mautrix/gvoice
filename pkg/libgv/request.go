@@ -229,7 +229,7 @@ func (c *Client) makeRequestDirect(ctx context.Context, method string, parsedAdd
 	return req, resp, nil
 }
 
-func (c *Client) logRequestFail(ctx context.Context, addr *url.URL, req *http.Request, resp *http.Response, err error, retryCount int, retryIn time.Duration) *ResponseError {
+func (c *Client) logRequestFail(ctx context.Context, addr *url.URL, req *http.Request, resp *http.Response, err error, retryCount int, retryIn time.Duration) error {
 	logEvt := zerolog.Ctx(ctx).Warn().
 		Stringer("request_url", addr).
 		Int("retry_count", retryCount)
@@ -255,6 +255,9 @@ func (c *Client) logRequestFail(ctx context.Context, addr *url.URL, req *http.Re
 		logEvt.Stringer("retry_in", retryIn).Msg("Request failed, retrying")
 	} else {
 		logEvt.Msg("Request failed, not retrying")
+	}
+	if err != nil {
+		return err
 	}
 	return &ResponseError{
 		Req:  req,
