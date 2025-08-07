@@ -82,4 +82,7 @@ const (
 	WaaBaseURL        = "https://" + WaaDomain + "/$rpc/google.internal.waa.v1.Waa"
 	EndpointCreateWaa = WaaBaseURL + "/Create"
 	EndpointPingWaa   = WaaBaseURL + "/Ping"
+
+	PushAPIBaseURL   = "https://www.googleapis.com"
+	PushRegistration = PushAPIBaseURL + "/voice/v1/voiceclient/api2notifications/registerdestination?alt=proto"
 )

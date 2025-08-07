@@ -1,0 +1,16 @@
+syntax = "proto3";
+package push;
+option go_package = "../gvproto";
+
+message PushRegistrationRequest {
+    message RequestBody {
+        message FCMToken {
+            string token = 1;
+        }
+
+        string hash = 12;
+        FCMToken fcm = 13;
+    }
+
+    RequestBody body = 2;
+}
