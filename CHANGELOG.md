@@ -1,3 +1,8 @@
+# v0.1.2 (2025-08-16)
+
+* Bumped minimum Go version to 1.24.
+* Fixed handling HTTP connection errors.
+
 # v0.1.1 (2025-07-16)
 
 * Updated Docker image to Alpine 3.22.

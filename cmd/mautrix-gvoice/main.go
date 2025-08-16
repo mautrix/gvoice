@@ -33,7 +33,7 @@ var m = mxmain.BridgeMain{
 	Name:        "mautrix-gvoice",
 	Description: "A Matrix-Google Voice puppeting bridge",
 	URL:         "https://github.com/mautrix/gvoice",
-	Version:     "0.1.1",
+	Version:     "0.1.2",
 	Connector:   c,
 }
 
