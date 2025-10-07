@@ -75,19 +75,22 @@ func (gc *GVClient) Connect(ctx context.Context) {
 	_, _ = gc.Main.Bridge.GetGhostByID(ctx, "")
 	_, err := gc.Client.GetAccount(ctx)
 	if err != nil {
-		// TODO split out bad credentials
-		gc.UserLogin.BridgeState.Send(status.BridgeState{
-			StateEvent: status.StateUnknownError,
-			Error:      "gv-connect-error",
-			Info:       map[string]any{"go_error": err.Error()},
-		})
+		zerolog.Ctx(ctx).Err(err).Msg("Failed to get account on connect")
+		if ctx.Err() == nil {
+			// TODO split out bad credentials
+			gc.UserLogin.BridgeState.Send(status.BridgeState{
+				StateEvent: status.StateUnknownError,
+				Error:      "gv-connect-error",
+				Info:       map[string]any{"go_error": err.Error()},
+			})
+		}
 		return
 	}
 	go gc.connectRealtime()
 }
 
 func (gc *GVClient) connectRealtime() {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(gc.Main.Bridge.BackgroundCtx)
 	gc.stopRealtime.Store(&cancel)
 	defer cancel()
 
@@ -98,8 +101,8 @@ func (gc *GVClient) connectRealtime() {
 	log := gc.UserLogin.Log.With().Str("component", "realtime channel").Logger()
 	ctx = log.WithContext(ctx)
 	err := gc.Client.RunRealtimeChannel(ctx)
-	if errors.Is(err, context.Canceled) {
-		log.Debug().Msg("Realtime channel disconnected with context canceled")
+	if errors.Is(err, context.Canceled) || ctx.Err() != nil {
+		log.Debug().Err(err).Msg("Realtime channel disconnected with context canceled")
 	} else if err == nil {
 		log.Warn().Msg("Realtime channel disconnected without error")
 	} else {
