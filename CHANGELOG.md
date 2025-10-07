@@ -1,3 +1,8 @@
+# v25.10 (unreleased)
+
+* Switched to calendar versioning.
+* Stopped sending unknown errors when connection is intentionally canceled.
+
 # v0.1.2 (2025-08-16)
 
 * Bumped minimum Go version to 1.24.
