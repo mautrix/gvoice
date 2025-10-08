@@ -34,6 +34,7 @@ import (
 
 var (
 	_ bridgev2.ReadReceiptHandlingNetworkAPI = (*GVClient)(nil)
+	_ bridgev2.DeleteChatHandlingNetworkAPI  = (*GVClient)(nil)
 )
 
 func (gc *GVClient) HandleMatrixMessage(ctx context.Context, msg *bridgev2.MatrixMessage) (message *bridgev2.MatrixMessageResponse, err error) {
@@ -139,5 +140,10 @@ func (gc *GVClient) HandleMatrixReadReceipt(ctx context.Context, msg *bridgev2.M
 		UnknownInt: 1,
 	})
 	zerolog.Ctx(ctx).Trace().Any("resp", resp).Msg("Update attributes response")
+	return err
+}
+
+func (gc *GVClient) HandleMatrixDeleteChat(ctx context.Context, chat *bridgev2.MatrixDeleteChat) error {
+	_, err := gc.Client.DeleteThread(ctx, string(chat.Portal.ID))
 	return err
 }
