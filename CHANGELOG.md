@@ -1,4 +1,4 @@
-# v25.10 (unreleased)
+# v25.10
 
 * Switched to calendar versioning.
 * Stopped sending unknown errors when connection is intentionally canceled.
