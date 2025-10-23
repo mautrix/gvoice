@@ -11,7 +11,7 @@ require (
 	golang.org/x/time v0.14.0
 	google.golang.org/protobuf v1.36.10
 	gopkg.in/yaml.v3 v3.0.1
-	maunium.net/go/mautrix v0.25.2
+	maunium.net/go/mautrix v0.25.3-0.20251023124911-1be49d53e4f3
 )
 
 require (
