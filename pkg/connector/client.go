@@ -100,18 +100,30 @@ func (gc *GVClient) connectRealtime() {
 
 	log := gc.UserLogin.Log.With().Str("component", "realtime channel").Logger()
 	ctx = log.WithContext(ctx)
-	err := gc.Client.RunRealtimeChannel(ctx)
-	if errors.Is(err, context.Canceled) || ctx.Err() != nil {
-		log.Debug().Err(err).Msg("Realtime channel disconnected with context canceled")
-	} else if err == nil {
-		log.Warn().Msg("Realtime channel disconnected without error")
-	} else {
-		log.Err(err).Msg("Realtime channel disconnected with unknown error")
-		gc.UserLogin.BridgeState.Send(status.BridgeState{
-			StateEvent: status.StateUnknownError,
-			Error:      "gv-realtime-unknown-error",
-			Info:       map[string]any{"go_error": err.Error()},
-		})
+	for {
+		err := gc.Client.RunRealtimeChannel(ctx)
+		if errors.Is(err, context.Canceled) || ctx.Err() != nil {
+			log.Debug().Err(err).Msg("Realtime channel disconnected with context canceled")
+		} else if err == nil {
+			log.Warn().Msg("Realtime channel disconnected without error")
+		} else {
+			log.Err(err).Msg("Realtime channel disconnected with unknown error")
+			gc.UserLogin.BridgeState.Send(status.BridgeState{
+				StateEvent: status.StateUnknownError,
+				Error:      "gv-realtime-unknown-error",
+				Info:       map[string]any{"go_error": err.Error()},
+			})
+			if errors.Is(err, libgv.ErrTooManyUnknownSID) {
+				return
+			}
+			select {
+			case <-ctx.Done():
+			case <-time.After(1 * time.Minute):
+				log.Err(err).Msg("Retrying connection after unknown error")
+				continue
+			}
+		}
+		return
 	}
 }
 

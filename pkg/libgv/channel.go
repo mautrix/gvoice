@@ -79,6 +79,8 @@ func (c *Client) SubscribeRealtimeChannel(ctx context.Context) (string, *gvproto
 	return chooseServerResp.GSessionID, createChannelResp.GetData().GetSession(), nil
 }
 
+var ErrTooManyUnknownSID = errors.New("too many repeated unknown SID errors")
+
 var noopSuffix = []byte(`,["noop"]]`)
 
 const ForceResubscribeInterval = 1 * time.Hour
@@ -124,11 +126,15 @@ func (c *Client) RunRealtimeChannel(ctx context.Context) error {
 			if errors.As(err, &httpErr) && bytes.Contains(httpErr.Body, []byte("Unknown SID")) {
 				failedRequests++
 				if failedRequests > 10 {
-					return errors.New("too many repeated unknown SID errors")
+					return ErrTooManyUnknownSID
 				}
 				sleep := time.Duration(failedRequests-1) * 2 * time.Second
 				log.Debug().Stringer("sleep_duration", sleep).Msg("Unknown SID error, re-subscribing")
-				time.Sleep(sleep)
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case <-time.After(sleep):
+				}
 				gSessionID, channel, err = c.SubscribeRealtimeChannel(ctx)
 				if err != nil {
 					return fmt.Errorf("failed to re-subscribe after unknown SID: %w", err)

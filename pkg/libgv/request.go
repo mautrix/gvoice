@@ -32,6 +32,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog"
+	"go.mau.fi/util/exhttp"
 	"go.mau.fi/util/pblite"
 	"google.golang.org/protobuf/proto"
 
@@ -175,7 +176,9 @@ func (c *Client) MakeRequest(ctx context.Context, method, baseAddr string, query
 	for {
 		req, resp, err := c.makeRequestDirect(ctx, method, parsedAddr, headers.Clone(), realBody, retryCount > 0)
 		if err != nil || resp.StatusCode >= 400 {
-			if resp == nil || resp.StatusCode < 500 || retryCount > MaxRetryCount {
+			if (err != nil && !exhttp.IsNetworkError(err)) ||
+				(resp != nil && resp.StatusCode < 500) ||
+				retryCount > MaxRetryCount {
 				return nil, c.logRequestFail(ctx, parsedAddr, req, resp, err, retryCount, 0)
 			}
 			retryCount++
