@@ -1,3 +1,7 @@
+# v25.11
+
+* Added more retries on connection errors
+
 # v25.10
 
 * Switched to calendar versioning.
