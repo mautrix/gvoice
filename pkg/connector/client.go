@@ -31,6 +31,8 @@ import (
 	"go.mau.fi/mautrix-gvoice/pkg/libgv"
 )
 
+var RetryUnknownErrorTimeout = 1 * time.Minute
+
 type GVClient struct {
 	Main      *GVConnector
 	UserLogin *bridgev2.UserLogin
@@ -118,7 +120,7 @@ func (gc *GVClient) connectRealtime() {
 			}
 			select {
 			case <-ctx.Done():
-			case <-time.After(1 * time.Minute):
+			case <-time.After(RetryUnknownErrorTimeout):
 				log.Err(err).Msg("Retrying connection after unknown error")
 				continue
 			}
