@@ -42,6 +42,9 @@ type Client struct {
 }
 
 func NewClient(cookies map[string]string) *Client {
+	if cookies == nil {
+		cookies = make(map[string]string)
+	}
 	return &Client{
 		HTTP:     &http.Client{Timeout: 120 * time.Second},
 		cookies:  cookies,
@@ -52,6 +55,9 @@ func NewClient(cookies map[string]string) *Client {
 func (c *Client) GetCookies() map[string]string {
 	c.cookiesLock.RLock()
 	defer c.cookiesLock.RUnlock()
+	if c.cookies == nil {
+		return make(map[string]string)
+	}
 	return maps.Clone(c.cookies)
 }
 
@@ -68,6 +74,9 @@ func (c *Client) updateCookies(ctx context.Context, resp *http.Response) {
 	}
 	c.cookiesLock.Lock()
 	defer c.cookiesLock.Unlock()
+	if c.cookies == nil {
+		c.cookies = make(map[string]string)
+	}
 	cookiesChanged := false
 	for _, cookie := range respCookies {
 		if cookie.Expires.Before(time.Now()) || cookie.MaxAge < 0 {
