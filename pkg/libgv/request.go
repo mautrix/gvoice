@@ -112,6 +112,18 @@ func (re *ResponseError) Error() string {
 	return fmt.Sprintf("unexpected status code %d", re.Resp.StatusCode)
 }
 
+func (re *ResponseError) IsAuthError() bool {
+	return re.Resp.StatusCode == http.StatusUnauthorized || re.Resp.StatusCode == http.StatusForbidden
+}
+
+func IsAuthError(err error) bool {
+	var re *ResponseError
+	if errors.As(err, &re) {
+		return re.IsAuthError()
+	}
+	return false
+}
+
 const MaxRetryCount = 10
 
 func (c *Client) MakeRequest(ctx context.Context, method, baseAddr string, query url.Values, headers http.Header, body any) (*http.Response, error) {
