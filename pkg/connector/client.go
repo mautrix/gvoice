@@ -31,7 +31,18 @@ import (
 	"go.mau.fi/mautrix-gvoice/pkg/libgv"
 )
 
-var RetryUnknownErrorTimeout = 1 * time.Minute
+const (
+	GVNotLoggedIn    status.BridgeStateErrorCode = "gv-not-logged-in"
+	GVBadCredentials status.BridgeStateErrorCode = "gv-bad-credentials"
+	GVConnectError   status.BridgeStateErrorCode = "gv-connect-error"
+	GVDisconnected   status.BridgeStateErrorCode = "gv-transient-disconnect"
+	GVRealtimeError  status.BridgeStateErrorCode = "gv-realtime-error"
+	GVTooManyRetries status.BridgeStateErrorCode = "gv-too-many-retries"
+)
+
+var RetryTransientErrorTimeout = 1 * time.Minute
+
+const MaxTransientRetries = 5
 
 type GVClient struct {
 	Main      *GVConnector
@@ -79,12 +90,19 @@ func (gc *GVClient) Connect(ctx context.Context) {
 	if err != nil {
 		zerolog.Ctx(ctx).Err(err).Msg("Failed to get account on connect")
 		if ctx.Err() == nil {
-			// TODO split out bad credentials
-			gc.UserLogin.BridgeState.Send(status.BridgeState{
-				StateEvent: status.StateUnknownError,
-				Error:      "gv-connect-error",
-				Info:       map[string]any{"go_error": err.Error()},
-			})
+			if libgv.IsAuthError(err) {
+				gc.UserLogin.BridgeState.Send(status.BridgeState{
+					StateEvent: status.StateBadCredentials,
+					Error:      GVBadCredentials,
+					Info:       map[string]any{"go_error": err.Error()},
+				})
+			} else {
+				gc.UserLogin.BridgeState.Send(status.BridgeState{
+					StateEvent: status.StateUnknownError,
+					Error:      GVConnectError,
+					Info:       map[string]any{"go_error": err.Error()},
+				})
+			}
 		}
 		return
 	}
@@ -102,26 +120,51 @@ func (gc *GVClient) connectRealtime() {
 
 	log := gc.UserLogin.Log.With().Str("component", "realtime channel").Logger()
 	ctx = log.WithContext(ctx)
+	transientRetries := 0
 	for {
 		err := gc.Client.RunRealtimeChannel(ctx)
 		if errors.Is(err, context.Canceled) || ctx.Err() != nil {
 			log.Debug().Err(err).Msg("Realtime channel disconnected with context canceled")
 		} else if err == nil {
 			log.Warn().Msg("Realtime channel disconnected without error")
-		} else {
-			log.Err(err).Msg("Realtime channel disconnected with unknown error")
+			transientRetries = 0
+		} else if libgv.IsAuthError(err) {
+			log.Err(err).Msg("Realtime channel disconnected with auth error")
 			gc.UserLogin.BridgeState.Send(status.BridgeState{
-				StateEvent: status.StateUnknownError,
-				Error:      "gv-realtime-unknown-error",
+				StateEvent: status.StateBadCredentials,
+				Error:      GVBadCredentials,
 				Info:       map[string]any{"go_error": err.Error()},
 			})
-			if errors.Is(err, libgv.ErrTooManyUnknownSID) {
+			return
+		} else if errors.Is(err, libgv.ErrTooManyUnknownSID) {
+			log.Err(err).Msg("Realtime channel failed with too many unknown SID errors")
+			gc.UserLogin.BridgeState.Send(status.BridgeState{
+				StateEvent: status.StateUnknownError,
+				Error:      GVTooManyRetries,
+				Info:       map[string]any{"go_error": err.Error()},
+			})
+			return
+		} else {
+			transientRetries++
+			if transientRetries > MaxTransientRetries {
+				log.Err(err).Int("retries", transientRetries).Msg("Realtime channel exceeded max transient retries")
+				gc.UserLogin.BridgeState.Send(status.BridgeState{
+					StateEvent: status.StateUnknownError,
+					Error:      GVTooManyRetries,
+					Info:       map[string]any{"go_error": err.Error()},
+				})
 				return
 			}
+			log.Err(err).Int("retry", transientRetries).Msg("Realtime channel disconnected with transient error")
+			gc.UserLogin.BridgeState.Send(status.BridgeState{
+				StateEvent: status.StateTransientDisconnect,
+				Error:      GVDisconnected,
+				Info:       map[string]any{"go_error": err.Error()},
+			})
 			select {
 			case <-ctx.Done():
-			case <-time.After(RetryUnknownErrorTimeout):
-				log.Err(err).Msg("Retrying connection after unknown error")
+			case <-time.After(RetryTransientErrorTimeout):
+				log.Info().Int("retry", transientRetries).Msg("Retrying connection after transient error")
 				continue
 			}
 		}
