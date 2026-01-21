@@ -39,6 +39,9 @@ import (
 const reqChooseServer = `[[null,null,null,[7,5],null,[null,[null,1],[[["3"]]]]]]`
 
 func (c *Client) SubscribeRealtimeChannel(ctx context.Context) (string, *gvproto.WebChannelSession, error) {
+	if c == nil {
+		return "", nil, fmt.Errorf("google Voice client is not initialized - ensure you call NewClient() with valid cookies before subscribing to channels")
+	}
 	chooseServerResp, err := ReadProtoResponse[*gvproto.RespChooseServer](
 		c.MakeRequest(ctx, http.MethodPost, EndpointRealtimeChooseServer, nil, http.Header{
 			"Content-Type": {ContentTypePBLite},
@@ -76,6 +79,12 @@ func (c *Client) SubscribeRealtimeChannel(ctx context.Context) (string, *gvproto
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to create channel: %w", err)
 	}
+	if createChannelResp.GetData() == nil {
+		return "", nil, fmt.Errorf("create channel response has no data - this may indicate authentication issues or Google Voice API changes")
+	}
+	if createChannelResp.GetData().GetSession() == nil {
+		return "", nil, fmt.Errorf("create channel response has no session - verify your Google Voice account is properly configured")
+	}
 	return chooseServerResp.GSessionID, createChannelResp.GetData().GetSession(), nil
 }
 
@@ -90,6 +99,9 @@ func (c *Client) RunRealtimeChannel(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	if channel == nil {
+		return fmt.Errorf("channel is nil after subscription - failed to establish realtime connection, check network and authentication")
+	}
 	lastResubscribe := time.Now()
 	log := zerolog.Ctx(ctx)
 	var ackID uint64
@@ -100,6 +112,9 @@ func (c *Client) RunRealtimeChannel(ctx context.Context) error {
 			gSessionID, channel, err = c.SubscribeRealtimeChannel(ctx)
 			if err != nil {
 				return fmt.Errorf("failed to re-subscribe after timeout: %w", err)
+			}
+			if channel == nil {
+				return fmt.Errorf("channel is nil after re-subscription - failed to re-establish realtime connection, verify authentication")
 			}
 			lastResubscribe = time.Now()
 			ackID = 0
@@ -123,7 +138,7 @@ func (c *Client) RunRealtimeChannel(ctx context.Context) error {
 		resp, err := c.MakeRequest(ctx, http.MethodGet, EndpointRealtimeChannel, query, nil, nil)
 		if err != nil {
 			var httpErr *ResponseError
-			if errors.As(err, &httpErr) && bytes.Contains(httpErr.Body, []byte("Unknown SID")) {
+			if errors.As(err, &httpErr) && httpErr.Body != nil && bytes.Contains(httpErr.Body, []byte("Unknown SID")) {
 				failedRequests++
 				if failedRequests > 10 {
 					return ErrTooManyUnknownSID
@@ -138,6 +153,9 @@ func (c *Client) RunRealtimeChannel(ctx context.Context) error {
 				gSessionID, channel, err = c.SubscribeRealtimeChannel(ctx)
 				if err != nil {
 					return fmt.Errorf("failed to re-subscribe after unknown SID: %w", err)
+				}
+				if channel == nil {
+					return fmt.Errorf("channel is nil after re-subscription following unknown SID - connection lost, try restarting the bridge")
 				}
 				lastResubscribe = time.Now()
 				ackID = 0
@@ -190,12 +208,17 @@ func (c *Client) RunRealtimeChannel(ctx context.Context) error {
 						log.Debug().RawJSON("failed_entry", entry).Msg("Failed to parse channel entry")
 						return fmt.Errorf("failed to parse entry #%d: %w", i+1, err)
 					}
-					if len(parsed.GetDataWrapper()) == 1 && parsed.GetDataWrapper()[0].GetAltData().GetReconnect() {
+					if len(parsed.GetDataWrapper()) == 1 && 
+						parsed.GetDataWrapper()[0].GetAltData() != nil && 
+						parsed.GetDataWrapper()[0].GetAltData().GetReconnect() {
 						_ = resp.Body.Close()
 						log.Debug().Msg("Got event that probably means we need to reconnect")
 						gSessionID, channel, err = c.SubscribeRealtimeChannel(ctx)
 						if err != nil {
 							return fmt.Errorf("failed to re-subscribe after timeout: %w", err)
+						}
+						if channel == nil {
+							return fmt.Errorf("channel is nil after re-subscription following reconnect event - persistent connection issues, check network stability")
 						}
 						lastResubscribe = time.Now()
 						ackID = 0
