@@ -268,6 +268,9 @@ func (gc *GVClient) getMessageMeta(msg *gvproto.Message) (ts time.Time, txnID ne
 }
 
 func (gc *GVClient) convertMessage(ctx context.Context, portal *bridgev2.Portal, intent bridgev2.MatrixAPI, msg *gvproto.Message) (*bridgev2.ConvertedMessage, error) {
+	if converted := convertGVCallMessage(msg); converted != nil {
+		return converted, nil
+	}
 	var content event.MessageEventContent
 	output := &bridgev2.ConvertedMessage{
 		Parts: []*bridgev2.ConvertedMessagePart{{
@@ -368,5 +371,41 @@ func addMediaFailure(into *event.MessageEventContent, message string) {
 	} else {
 		into.Body = message
 		into.MsgType = event.MsgNotice
+	}
+}
+
+func convertGVCallMessage(msg *gvproto.Message) *bridgev2.ConvertedMessage {
+	if msg.GetText() != "" || msg.GetMMS() != nil {
+		return nil
+	}
+	var body string
+	switch msg.GetCoarseType() {
+	case gvproto.Message_CALL_TYPE_INCOMING:
+		switch msg.GetType() {
+		case gvproto.Message_INCOMING_CALL, gvproto.Message_INCOMING_CALL_CANCELLED:
+			body = "Incoming call"
+		default:
+			return nil
+		}
+	case gvproto.Message_CALL_TYPE_OUTGOING:
+		if msg.GetType() != gvproto.Message_OUTGOING_CALL {
+			return nil
+		}
+		body = "Outgoing call"
+	default:
+		return nil
+	}
+	return &bridgev2.ConvertedMessage{
+		Parts: []*bridgev2.ConvertedMessagePart{{
+			Type: event.EventMessage,
+			Content: &event.MessageEventContent{
+				MsgType: event.MsgText,
+				Body:    body,
+				BeeperActionMessage: &event.BeeperActionMessage{
+					Type:     event.BeeperActionMessageCall,
+					CallType: event.BeeperActionMessageCallTypeVoice,
+				},
+			},
+		}},
 	}
 }
