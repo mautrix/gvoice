@@ -271,14 +271,28 @@ func (gc *GVClient) getMessageMeta(msg *gvproto.Message) (ts time.Time, txnID ne
 }
 
 func (gc *GVClient) convertMessage(ctx context.Context, portal *bridgev2.Portal, intent bridgev2.MatrixAPI, msg *gvproto.Message) (*bridgev2.ConvertedMessage, error) {
-	if converted := convertGVVoicemailMessage(msg); converted != nil {
-		return converted, nil
-	} else if converted := convertGVCallMessage(msg); converted != nil {
-		return converted, nil
-	} else if msg.GetText() == "" && msg.GetMMS() == nil {
+	for _, converted := range []*bridgev2.ConvertedMessage{
+		convertGVVoicemailMessage(msg),
+		convertGVMissedCallMessage(msg),
+		convertGVCallMessage(msg),
+	} {
+		if converted != nil {
+			return converted, nil
+		}
+	}
+	if msg.GetText() == "" && msg.GetMMS() == nil {
 		logUnknownGVMessage(ctx, msg, "empty converted message body")
 		return convertUnknownGVMessage(msg), nil
 	}
+	converted := gc.convertGVTextOrMMSMessage(ctx, portal, intent, msg)
+	if converted == nil || isEmptyGVConvertedMessage(converted) {
+		logUnknownGVMessage(ctx, msg, "converted empty text message")
+		return convertUnknownGVMessage(msg), nil
+	}
+	return converted, nil
+}
+
+func (gc *GVClient) convertGVTextOrMMSMessage(ctx context.Context, portal *bridgev2.Portal, intent bridgev2.MatrixAPI, msg *gvproto.Message) *bridgev2.ConvertedMessage {
 	var content event.MessageEventContent
 	output := &bridgev2.ConvertedMessage{
 		Parts: []*bridgev2.ConvertedMessagePart{{
@@ -311,7 +325,15 @@ func (gc *GVClient) convertMessage(ctx context.Context, portal *bridgev2.Portal,
 	} else {
 		content.Body = msg.Text
 	}
-	return output, nil
+	return output
+}
+
+func isEmptyGVConvertedMessage(msg *bridgev2.ConvertedMessage) bool {
+	if msg == nil || len(msg.Parts) == 0 || msg.Parts[0] == nil || msg.Parts[0].Content == nil {
+		return true
+	}
+	content := msg.Parts[0].Content
+	return content.MsgType == event.MsgText && content.Body == "" && content.FormattedBody == ""
 }
 
 func (gc *GVClient) convertMedia(ctx context.Context, portal *bridgev2.Portal, intent bridgev2.MatrixAPI, att *gvproto.Attachment, into *event.MessageEventContent) {
@@ -409,6 +431,29 @@ func convertGVCallMessage(msg *gvproto.Message) *bridgev2.ConvertedMessage {
 			Content: &event.MessageEventContent{
 				MsgType: event.MsgText,
 				Body:    body,
+				BeeperActionMessage: &event.BeeperActionMessage{
+					Type:     event.BeeperActionMessageCall,
+					CallType: event.BeeperActionMessageCallTypeVoice,
+				},
+			},
+		}},
+	}
+}
+
+func convertGVMissedCallMessage(msg *gvproto.Message) *bridgev2.ConvertedMessage {
+	if msg.GetType() != gvproto.Message_UNKNOWN_TYPE || msg.GetCoarseType() != gvproto.Message_UNKNOWN_COARSE_TYPE {
+		return nil
+	} else if msg.GetText() != "" || msg.GetMMS() != nil || msg.GetTranscript() != nil || msg.GetMediaURL() != "" {
+		return nil
+	} else if len(msg.ProtoReflect().GetUnknown()) > 0 {
+		return nil
+	}
+	return &bridgev2.ConvertedMessage{
+		Parts: []*bridgev2.ConvertedMessagePart{{
+			Type: event.EventMessage,
+			Content: &event.MessageEventContent{
+				MsgType: event.MsgText,
+				Body:    "Missed call",
 				BeeperActionMessage: &event.BeeperActionMessage{
 					Type:     event.BeeperActionMessageCall,
 					CallType: event.BeeperActionMessageCallTypeVoice,
