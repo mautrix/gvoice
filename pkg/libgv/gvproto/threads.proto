@@ -42,7 +42,7 @@ message ThreadAttributes {
 
 message Message {
     enum Type {
-        UNKNOWN_TYPE = 0;
+        MISSED_CALL = 0;
         OUTGOING_CALL = 1;
         VOICEMAIL = 2;
         INCOMING_CALL = 7;
@@ -51,7 +51,7 @@ message Message {
         INCOMING_CALL_CANCELLED = 14;
     }
     enum CoarseType {
-        UNKNOWN_COARSE_TYPE = 0;
+        CALL_TYPE_MISSED = 0;
         CALL_TYPE_OUTGOING = 1;
         CALL_TYPE_INCOMING = 2;
         CALL_TYPE_VOICEMAIL = 3;

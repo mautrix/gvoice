@@ -131,7 +131,7 @@ func (ContactSpammerStatus) EnumDescriptor() ([]byte, []int) {
 type Message_Type int32
 
 const (
-	Message_UNKNOWN_TYPE            Message_Type = 0
+	Message_MISSED_CALL             Message_Type = 0
 	Message_OUTGOING_CALL           Message_Type = 1
 	Message_VOICEMAIL               Message_Type = 2
 	Message_INCOMING_CALL           Message_Type = 7
@@ -143,7 +143,7 @@ const (
 // Enum value maps for Message_Type.
 var (
 	Message_Type_name = map[int32]string{
-		0:  "UNKNOWN_TYPE",
+		0:  "MISSED_CALL",
 		1:  "OUTGOING_CALL",
 		2:  "VOICEMAIL",
 		7:  "INCOMING_CALL",
@@ -152,7 +152,7 @@ var (
 		14: "INCOMING_CALL_CANCELLED",
 	}
 	Message_Type_value = map[string]int32{
-		"UNKNOWN_TYPE":            0,
+		"MISSED_CALL":             0,
 		"OUTGOING_CALL":           1,
 		"VOICEMAIL":               2,
 		"INCOMING_CALL":           7,
@@ -192,7 +192,7 @@ func (Message_Type) EnumDescriptor() ([]byte, []int) {
 type Message_CoarseType int32
 
 const (
-	Message_UNKNOWN_COARSE_TYPE Message_CoarseType = 0
+	Message_CALL_TYPE_MISSED    Message_CoarseType = 0
 	Message_CALL_TYPE_OUTGOING  Message_CoarseType = 1
 	Message_CALL_TYPE_INCOMING  Message_CoarseType = 2
 	Message_CALL_TYPE_VOICEMAIL Message_CoarseType = 3
@@ -203,7 +203,7 @@ const (
 // Enum value maps for Message_CoarseType.
 var (
 	Message_CoarseType_name = map[int32]string{
-		0: "UNKNOWN_COARSE_TYPE",
+		0: "CALL_TYPE_MISSED",
 		1: "CALL_TYPE_OUTGOING",
 		2: "CALL_TYPE_INCOMING",
 		3: "CALL_TYPE_VOICEMAIL",
@@ -211,7 +211,7 @@ var (
 		6: "CALL_TYPE_SMS_OUT",
 	}
 	Message_CoarseType_value = map[string]int32{
-		"UNKNOWN_COARSE_TYPE": 0,
+		"CALL_TYPE_MISSED":    0,
 		"CALL_TYPE_OUTGOING":  1,
 		"CALL_TYPE_INCOMING":  2,
 		"CALL_TYPE_VOICEMAIL": 3,
@@ -828,7 +828,7 @@ func (x *Message) GetType() Message_Type {
 	if x != nil {
 		return x.Type
 	}
-	return Message_UNKNOWN_TYPE
+	return Message_MISSED_CALL
 }
 
 func (x *Message) GetStatus() Message_Status {
@@ -870,7 +870,7 @@ func (x *Message) GetCoarseType() Message_CoarseType {
 	if x != nil {
 		return x.CoarseType
 	}
-	return Message_UNKNOWN_COARSE_TYPE
+	return Message_CALL_TYPE_MISSED
 }
 
 func (x *Message) GetTranscriptStatus() Message_TranscriptStatus {
@@ -1366,7 +1366,7 @@ const file_threads_proto_rawDesc = "" +
 	"\afolders\x18\x05 \x03(\x0e2\x15.threads.ThreadFolderR\afolders\x12\x1a\n" +
 	"\barchived\x18\x06 \x01(\bR\barchived\x12\x1c\n" +
 	"\tgroupName\x18\a \x01(\tR\tgroupName\x12Q\n" +
-	"\x14contactSpammerStatus\x18\b \x01(\x0e2\x1d.threads.ContactSpammerStatusR\x14contactSpammerStatus\"\xc3\v\n" +
+	"\x14contactSpammerStatus\x18\b \x01(\x0e2\x1d.threads.ContactSpammerStatusR\x14contactSpammerStatus\"\xbf\v\n" +
 	"\aMessage\x12\x0e\n" +
 	"\x02ID\x18\x01 \x01(\tR\x02ID\x12\x1c\n" +
 	"\ttimestamp\x18\x02 \x01(\x03R\ttimestamp\x12$\n" +
@@ -1405,9 +1405,9 @@ const file_threads_proto_rawDesc = "" +
 	"\x04text\x18\x01 \x01(\fR\x04text\x12\x1e\n" +
 	"\n" +
 	"confidence\x18\x04 \x01(\x02R\n" +
-	"confidence\"\x83\x01\n" +
-	"\x04Type\x12\x10\n" +
-	"\fUNKNOWN_TYPE\x10\x00\x12\x11\n" +
+	"confidence\"\x82\x01\n" +
+	"\x04Type\x12\x0f\n" +
+	"\vMISSED_CALL\x10\x00\x12\x11\n" +
 	"\rOUTGOING_CALL\x10\x01\x12\r\n" +
 	"\tVOICEMAIL\x10\x02\x12\x11\n" +
 	"\rINCOMING_CALL\x10\a\x12\n" +
@@ -1415,10 +1415,10 @@ const file_threads_proto_rawDesc = "" +
 	"\x06SMS_IN\x10\n" +
 	"\x12\v\n" +
 	"\aSMS_OUT\x10\v\x12\x1b\n" +
-	"\x17INCOMING_CALL_CANCELLED\x10\x0e\"\x9b\x01\n" +
+	"\x17INCOMING_CALL_CANCELLED\x10\x0e\"\x98\x01\n" +
 	"\n" +
-	"CoarseType\x12\x17\n" +
-	"\x13UNKNOWN_COARSE_TYPE\x10\x00\x12\x16\n" +
+	"CoarseType\x12\x14\n" +
+	"\x10CALL_TYPE_MISSED\x10\x00\x12\x16\n" +
 	"\x12CALL_TYPE_OUTGOING\x10\x01\x12\x16\n" +
 	"\x12CALL_TYPE_INCOMING\x10\x02\x12\x17\n" +
 	"\x13CALL_TYPE_VOICEMAIL\x10\x03\x12\x14\n" +
