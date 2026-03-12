@@ -30,7 +30,6 @@ import (
 
 	"github.com/rs/zerolog"
 	"go.mau.fi/util/exmime"
-	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
 	"maunium.net/go/mautrix/bridgev2"
 	"maunium.net/go/mautrix/bridgev2/networkid"
@@ -528,7 +527,6 @@ func logUnknownGVMessage(ctx context.Context, msg *gvproto.Message, reason strin
 		Str("message_type", msg.GetType().String()).
 		Str("coarse_type", msg.GetCoarseType().String()).
 		Str("text", msg.GetText()).
-		Str("raw_text", prototext.Format(msg)).
 		Bool("has_mms", msg.GetMMS() != nil).
 		Msg("Encountered unknown Google Voice message")
 }
