@@ -274,8 +274,8 @@ func (gc *GVClient) getMessageMeta(msg *gvproto.Message) (ts time.Time, txnID ne
 func (gc *GVClient) convertMessage(ctx context.Context, portal *bridgev2.Portal, intent bridgev2.MatrixAPI, msg *gvproto.Message) (*bridgev2.ConvertedMessage, error) {
 	for _, converted := range []*bridgev2.ConvertedMessage{
 		convertGVVoicemailMessage(msg),
-		convertGVMissedCallMessage(msg),
 		convertGVCallMessage(msg),
+		convertGVMissedCallMessage(msg),
 	} {
 		if converted != nil {
 			return converted, nil
