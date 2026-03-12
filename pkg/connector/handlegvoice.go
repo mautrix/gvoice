@@ -444,10 +444,6 @@ func convertGVCallMessage(msg *gvproto.Message) *bridgev2.ConvertedMessage {
 func convertGVMissedCallMessage(msg *gvproto.Message) *bridgev2.ConvertedMessage {
 	if msg.GetType() != gvproto.Message_MISSED_CALL || msg.GetCoarseType() != gvproto.Message_CALL_TYPE_MISSED {
 		return nil
-	} else if msg.GetText() != "" || msg.GetMMS() != nil || msg.GetTranscript() != nil || msg.GetMediaURL() != "" {
-		return nil
-	} else if len(msg.ProtoReflect().GetUnknown()) > 0 {
-		return nil
 	}
 	return &bridgev2.ConvertedMessage{
 		Parts: []*bridgev2.ConvertedMessagePart{{
