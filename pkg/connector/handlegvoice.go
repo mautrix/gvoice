@@ -19,6 +19,7 @@ package connector
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"slices"
@@ -28,6 +29,7 @@ import (
 
 	"github.com/rs/zerolog"
 	"go.mau.fi/util/exmime"
+	"google.golang.org/protobuf/proto"
 	"maunium.net/go/mautrix/bridgev2"
 	"maunium.net/go/mautrix/bridgev2/networkid"
 	"maunium.net/go/mautrix/bridgev2/simplevent"
@@ -270,6 +272,9 @@ func (gc *GVClient) getMessageMeta(msg *gvproto.Message) (ts time.Time, txnID ne
 func (gc *GVClient) convertMessage(ctx context.Context, portal *bridgev2.Portal, intent bridgev2.MatrixAPI, msg *gvproto.Message) (*bridgev2.ConvertedMessage, error) {
 	if converted := convertGVCallMessage(msg); converted != nil {
 		return converted, nil
+	} else if msg.GetText() == "" && msg.GetMMS() == nil {
+		logUnknownGVMessage(ctx, msg, "empty converted message body")
+		return convertUnknownGVMessage(msg), nil
 	}
 	var content event.MessageEventContent
 	output := &bridgev2.ConvertedMessage{
@@ -408,4 +413,35 @@ func convertGVCallMessage(msg *gvproto.Message) *bridgev2.ConvertedMessage {
 			},
 		}},
 	}
+}
+
+func convertUnknownGVMessage(msg *gvproto.Message) *bridgev2.ConvertedMessage {
+	extra := make(map[string]any)
+	if data, err := proto.Marshal(msg); err == nil {
+		encodedMsg := base64.StdEncoding.EncodeToString(data)
+		if len(encodedMsg) < 16*1024 {
+			extra["fi.mau.gvoice.unsupported_message_data"] = encodedMsg
+		}
+	}
+	return &bridgev2.ConvertedMessage{
+		Parts: []*bridgev2.ConvertedMessagePart{{
+			Type: event.EventMessage,
+			Content: &event.MessageEventContent{
+				MsgType: event.MsgNotice,
+				Body:    "Unknown message type, please view it on the Google Voice app",
+			},
+			Extra: extra,
+		}},
+	}
+}
+
+func logUnknownGVMessage(ctx context.Context, msg *gvproto.Message, reason string) {
+	zerolog.Ctx(ctx).Warn().
+		Str("reason", reason).
+		Str("message_id", msg.GetID()).
+		Str("message_type", msg.GetType().String()).
+		Str("coarse_type", msg.GetCoarseType().String()).
+		Str("text", msg.GetText()).
+		Bool("has_mms", msg.GetMMS() != nil).
+		Msg("Encountered unknown Google Voice message")
 }
