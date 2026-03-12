@@ -26,6 +26,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/rs/zerolog"
 	"go.mau.fi/util/exmime"
@@ -270,7 +271,9 @@ func (gc *GVClient) getMessageMeta(msg *gvproto.Message) (ts time.Time, txnID ne
 }
 
 func (gc *GVClient) convertMessage(ctx context.Context, portal *bridgev2.Portal, intent bridgev2.MatrixAPI, msg *gvproto.Message) (*bridgev2.ConvertedMessage, error) {
-	if converted := convertGVCallMessage(msg); converted != nil {
+	if converted := convertGVVoicemailMessage(msg); converted != nil {
+		return converted, nil
+	} else if converted := convertGVCallMessage(msg); converted != nil {
 		return converted, nil
 	} else if msg.GetText() == "" && msg.GetMMS() == nil {
 		logUnknownGVMessage(ctx, msg, "empty converted message body")
@@ -413,6 +416,47 @@ func convertGVCallMessage(msg *gvproto.Message) *bridgev2.ConvertedMessage {
 			},
 		}},
 	}
+}
+
+func convertGVVoicemailMessage(msg *gvproto.Message) *bridgev2.ConvertedMessage {
+	if msg.GetType() != gvproto.Message_VOICEMAIL || msg.GetCoarseType() != gvproto.Message_CALL_TYPE_VOICEMAIL {
+		return nil
+	}
+	transcript := buildGVVoicemailTranscript(msg.GetTranscript())
+	if transcript == "" {
+		return nil
+	}
+	return &bridgev2.ConvertedMessage{
+		Parts: []*bridgev2.ConvertedMessagePart{{
+			Type: event.EventMessage,
+			Content: &event.MessageEventContent{
+				MsgType: event.MsgText,
+				Body:    "Voicemail: " + transcript,
+			},
+		}},
+	}
+}
+
+func buildGVVoicemailTranscript(transcript *gvproto.Message_Transcript) string {
+	if transcript == nil {
+		return ""
+	}
+	var parts []string
+	for _, token := range transcript.GetTokens() {
+		text := strings.TrimSpace(decodeGVTranscriptToken(token.GetText()))
+		if text == "" {
+			continue
+		}
+		parts = append(parts, text)
+	}
+	return strings.Join(parts, " ")
+}
+
+func decodeGVTranscriptToken(text []byte) string {
+	if len(text) == 0 || !utf8.Valid(text) {
+		return ""
+	}
+	return string(text)
 }
 
 func convertUnknownGVMessage(msg *gvproto.Message) *bridgev2.ConvertedMessage {

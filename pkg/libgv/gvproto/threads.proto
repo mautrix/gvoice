@@ -78,13 +78,24 @@ message Message {
         Status status = 2;
     }
 
+    message Transcript {
+        float confidence = 1;
+        repeated TranscriptToken tokens = 2;
+    }
+
+    message TranscriptToken {
+        bytes text = 1;
+        float confidence = 4;
+    }
+
     string ID = 1;
     int64 timestamp = 2;
     string destinationID = 3;
     Contact contact = 4;
     Type type = 5;
     Status status = 6;
-    int32 durationSeconds = 9;
+    Transcript transcript = 7;
+    float durationSeconds = 9;
     string text = 10;
     string mediaURL = 12;
     CoarseType coarseType = 13;

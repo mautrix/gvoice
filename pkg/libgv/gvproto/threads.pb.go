@@ -751,7 +751,8 @@ type Message struct {
 	Contact                       *Contact                 `protobuf:"bytes,4,opt,name=contact,proto3" json:"contact,omitempty"`
 	Type                          Message_Type             `protobuf:"varint,5,opt,name=type,proto3,enum=threads.Message_Type" json:"type,omitempty"`
 	Status                        Message_Status           `protobuf:"varint,6,opt,name=status,proto3,enum=threads.Message_Status" json:"status,omitempty"`
-	DurationSeconds               int32                    `protobuf:"varint,9,opt,name=durationSeconds,proto3" json:"durationSeconds,omitempty"`
+	Transcript                    *Message_Transcript      `protobuf:"bytes,7,opt,name=transcript,proto3" json:"transcript,omitempty"`
+	DurationSeconds               float32                  `protobuf:"fixed32,9,opt,name=durationSeconds,proto3" json:"durationSeconds,omitempty"`
 	Text                          string                   `protobuf:"bytes,10,opt,name=text,proto3" json:"text,omitempty"`
 	MediaURL                      string                   `protobuf:"bytes,12,opt,name=mediaURL,proto3" json:"mediaURL,omitempty"`
 	CoarseType                    Message_CoarseType       `protobuf:"varint,13,opt,name=coarseType,proto3,enum=threads.Message_CoarseType" json:"coarseType,omitempty"`
@@ -837,7 +838,14 @@ func (x *Message) GetStatus() Message_Status {
 	return Message_UNREAD
 }
 
-func (x *Message) GetDurationSeconds() int32 {
+func (x *Message) GetTranscript() *Message_Transcript {
+	if x != nil {
+		return x.Transcript
+	}
+	return nil
+}
+
+func (x *Message) GetDurationSeconds() float32 {
 	if x != nil {
 		return x.DurationSeconds
 	}
@@ -1171,6 +1179,110 @@ func (x *Message_UserFeedback) GetStatus() Message_UserFeedback_Status {
 	return Message_UserFeedback_UNKNOWN_STATUS
 }
 
+type Message_Transcript struct {
+	state         protoimpl.MessageState     `protogen:"open.v1"`
+	Confidence    float32                    `protobuf:"fixed32,1,opt,name=confidence,proto3" json:"confidence,omitempty"`
+	Tokens        []*Message_TranscriptToken `protobuf:"bytes,2,rep,name=tokens,proto3" json:"tokens,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Message_Transcript) Reset() {
+	*x = Message_Transcript{}
+	mi := &file_threads_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Message_Transcript) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Message_Transcript) ProtoMessage() {}
+
+func (x *Message_Transcript) ProtoReflect() protoreflect.Message {
+	mi := &file_threads_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Message_Transcript.ProtoReflect.Descriptor instead.
+func (*Message_Transcript) Descriptor() ([]byte, []int) {
+	return file_threads_proto_rawDescGZIP(), []int{2, 1}
+}
+
+func (x *Message_Transcript) GetConfidence() float32 {
+	if x != nil {
+		return x.Confidence
+	}
+	return 0
+}
+
+func (x *Message_Transcript) GetTokens() []*Message_TranscriptToken {
+	if x != nil {
+		return x.Tokens
+	}
+	return nil
+}
+
+type Message_TranscriptToken struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Text          []byte                 `protobuf:"bytes,1,opt,name=text,proto3" json:"text,omitempty"`
+	Confidence    float32                `protobuf:"fixed32,4,opt,name=confidence,proto3" json:"confidence,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Message_TranscriptToken) Reset() {
+	*x = Message_TranscriptToken{}
+	mi := &file_threads_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Message_TranscriptToken) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Message_TranscriptToken) ProtoMessage() {}
+
+func (x *Message_TranscriptToken) ProtoReflect() protoreflect.Message {
+	mi := &file_threads_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Message_TranscriptToken.ProtoReflect.Descriptor instead.
+func (*Message_TranscriptToken) Descriptor() ([]byte, []int) {
+	return file_threads_proto_rawDescGZIP(), []int{2, 2}
+}
+
+func (x *Message_TranscriptToken) GetText() []byte {
+	if x != nil {
+		return x.Text
+	}
+	return nil
+}
+
+func (x *Message_TranscriptToken) GetConfidence() float32 {
+	if x != nil {
+		return x.Confidence
+	}
+	return 0
+}
+
 type Attachment_Metadata struct {
 	state         protoimpl.MessageState       `protogen:"open.v1"`
 	Size          Attachment_Metadata_SizeSpec `protobuf:"varint,1,opt,name=size,proto3,enum=threads.Attachment_Metadata_SizeSpec" json:"size,omitempty"`
@@ -1182,7 +1294,7 @@ type Attachment_Metadata struct {
 
 func (x *Attachment_Metadata) Reset() {
 	*x = Attachment_Metadata{}
-	mi := &file_threads_proto_msgTypes[7]
+	mi := &file_threads_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1194,7 +1306,7 @@ func (x *Attachment_Metadata) String() string {
 func (*Attachment_Metadata) ProtoMessage() {}
 
 func (x *Attachment_Metadata) ProtoReflect() protoreflect.Message {
-	mi := &file_threads_proto_msgTypes[7]
+	mi := &file_threads_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1254,15 +1366,18 @@ const file_threads_proto_rawDesc = "" +
 	"\afolders\x18\x05 \x03(\x0e2\x15.threads.ThreadFolderR\afolders\x12\x1a\n" +
 	"\barchived\x18\x06 \x01(\bR\barchived\x12\x1c\n" +
 	"\tgroupName\x18\a \x01(\tR\tgroupName\x12Q\n" +
-	"\x14contactSpammerStatus\x18\b \x01(\x0e2\x1d.threads.ContactSpammerStatusR\x14contactSpammerStatus\"\xd7\t\n" +
+	"\x14contactSpammerStatus\x18\b \x01(\x0e2\x1d.threads.ContactSpammerStatusR\x14contactSpammerStatus\"\xc3\v\n" +
 	"\aMessage\x12\x0e\n" +
 	"\x02ID\x18\x01 \x01(\tR\x02ID\x12\x1c\n" +
 	"\ttimestamp\x18\x02 \x01(\x03R\ttimestamp\x12$\n" +
 	"\rdestinationID\x18\x03 \x01(\tR\rdestinationID\x12*\n" +
 	"\acontact\x18\x04 \x01(\v2\x10.threads.ContactR\acontact\x12)\n" +
 	"\x04type\x18\x05 \x01(\x0e2\x15.threads.Message.TypeR\x04type\x12/\n" +
-	"\x06status\x18\x06 \x01(\x0e2\x17.threads.Message.StatusR\x06status\x12(\n" +
-	"\x0fdurationSeconds\x18\t \x01(\x05R\x0fdurationSeconds\x12\x12\n" +
+	"\x06status\x18\x06 \x01(\x0e2\x17.threads.Message.StatusR\x06status\x12;\n" +
+	"\n" +
+	"transcript\x18\a \x01(\v2\x1b.threads.Message.TranscriptR\n" +
+	"transcript\x12(\n" +
+	"\x0fdurationSeconds\x18\t \x01(\x02R\x0fdurationSeconds\x12\x12\n" +
 	"\x04text\x18\n" +
 	" \x01(\tR\x04text\x12\x1a\n" +
 	"\bmediaURL\x18\f \x01(\tR\bmediaURL\x12;\n" +
@@ -1279,7 +1394,18 @@ const file_threads_proto_rawDesc = "" +
 	"\x06status\x18\x02 \x01(\x0e2$.threads.Message.UserFeedback.StatusR\x06status\"0\n" +
 	"\x06Status\x12\x12\n" +
 	"\x0eUNKNOWN_STATUS\x10\x00\x12\x12\n" +
-	"\x0eNOT_APPLICABLE\x10\x01\"\x83\x01\n" +
+	"\x0eNOT_APPLICABLE\x10\x01\x1af\n" +
+	"\n" +
+	"Transcript\x12\x1e\n" +
+	"\n" +
+	"confidence\x18\x01 \x01(\x02R\n" +
+	"confidence\x128\n" +
+	"\x06tokens\x18\x02 \x03(\v2 .threads.Message.TranscriptTokenR\x06tokens\x1aE\n" +
+	"\x0fTranscriptToken\x12\x12\n" +
+	"\x04text\x18\x01 \x01(\fR\x04text\x12\x1e\n" +
+	"\n" +
+	"confidence\x18\x04 \x01(\x02R\n" +
+	"confidence\"\x83\x01\n" +
 	"\x04Type\x12\x10\n" +
 	"\fUNKNOWN_TYPE\x10\x00\x12\x11\n" +
 	"\rOUTGOING_CALL\x10\x01\x12\r\n" +
@@ -1367,7 +1493,7 @@ func file_threads_proto_rawDescGZIP() []byte {
 }
 
 var file_threads_proto_enumTypes = make([]protoimpl.EnumInfo, 10)
-var file_threads_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_threads_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_threads_proto_goTypes = []any{
 	(ThreadFolder)(0),                 // 0: threads.ThreadFolder
 	(ContactSpammerStatus)(0),         // 1: threads.ContactSpammerStatus
@@ -1386,7 +1512,9 @@ var file_threads_proto_goTypes = []any{
 	(*Attachment)(nil),                // 14: threads.Attachment
 	(*Contact)(nil),                   // 15: threads.Contact
 	(*Message_UserFeedback)(nil),      // 16: threads.Message.UserFeedback
-	(*Attachment_Metadata)(nil),       // 17: threads.Attachment.Metadata
+	(*Message_Transcript)(nil),        // 17: threads.Message.Transcript
+	(*Message_TranscriptToken)(nil),   // 18: threads.Message.TranscriptToken
+	(*Attachment_Metadata)(nil),       // 19: threads.Attachment.Metadata
 }
 var file_threads_proto_depIdxs = []int32{
 	12, // 0: threads.Thread.messages:type_name -> threads.Message
@@ -1398,22 +1526,24 @@ var file_threads_proto_depIdxs = []int32{
 	15, // 6: threads.Message.contact:type_name -> threads.Contact
 	2,  // 7: threads.Message.type:type_name -> threads.Message.Type
 	4,  // 8: threads.Message.status:type_name -> threads.Message.Status
-	3,  // 9: threads.Message.coarseType:type_name -> threads.Message.CoarseType
-	5,  // 10: threads.Message.transcriptStatus:type_name -> threads.Message.TranscriptStatus
-	13, // 11: threads.Message.MMS:type_name -> threads.MMSMessage
-	16, // 12: threads.Message.userFeedback:type_name -> threads.Message.UserFeedback
-	14, // 13: threads.MMSMessage.attachments:type_name -> threads.Attachment
-	15, // 14: threads.MMSMessage.participants:type_name -> threads.Contact
-	7,  // 15: threads.Attachment.status:type_name -> threads.Attachment.Status
-	17, // 16: threads.Attachment.metadata:type_name -> threads.Attachment.Metadata
-	8,  // 17: threads.Attachment.mediaType:type_name -> threads.Attachment.MediaType
-	6,  // 18: threads.Message.UserFeedback.status:type_name -> threads.Message.UserFeedback.Status
-	9,  // 19: threads.Attachment.Metadata.size:type_name -> threads.Attachment.Metadata.SizeSpec
-	20, // [20:20] is the sub-list for method output_type
-	20, // [20:20] is the sub-list for method input_type
-	20, // [20:20] is the sub-list for extension type_name
-	20, // [20:20] is the sub-list for extension extendee
-	0,  // [0:20] is the sub-list for field type_name
+	17, // 9: threads.Message.transcript:type_name -> threads.Message.Transcript
+	3,  // 10: threads.Message.coarseType:type_name -> threads.Message.CoarseType
+	5,  // 11: threads.Message.transcriptStatus:type_name -> threads.Message.TranscriptStatus
+	13, // 12: threads.Message.MMS:type_name -> threads.MMSMessage
+	16, // 13: threads.Message.userFeedback:type_name -> threads.Message.UserFeedback
+	14, // 14: threads.MMSMessage.attachments:type_name -> threads.Attachment
+	15, // 15: threads.MMSMessage.participants:type_name -> threads.Contact
+	7,  // 16: threads.Attachment.status:type_name -> threads.Attachment.Status
+	19, // 17: threads.Attachment.metadata:type_name -> threads.Attachment.Metadata
+	8,  // 18: threads.Attachment.mediaType:type_name -> threads.Attachment.MediaType
+	6,  // 19: threads.Message.UserFeedback.status:type_name -> threads.Message.UserFeedback.Status
+	18, // 20: threads.Message.Transcript.tokens:type_name -> threads.Message.TranscriptToken
+	9,  // 21: threads.Attachment.Metadata.size:type_name -> threads.Attachment.Metadata.SizeSpec
+	22, // [22:22] is the sub-list for method output_type
+	22, // [22:22] is the sub-list for method input_type
+	22, // [22:22] is the sub-list for extension type_name
+	22, // [22:22] is the sub-list for extension extendee
+	0,  // [0:22] is the sub-list for field type_name
 }
 
 func init() { file_threads_proto_init() }
@@ -1427,7 +1557,7 @@ func file_threads_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_threads_proto_rawDesc), len(file_threads_proto_rawDesc)),
 			NumEnums:      10,
-			NumMessages:   8,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
