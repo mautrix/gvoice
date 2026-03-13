@@ -19,15 +19,18 @@ package connector
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/rs/zerolog"
 	"go.mau.fi/util/exmime"
+	"google.golang.org/protobuf/proto"
 	"maunium.net/go/mautrix/bridgev2"
 	"maunium.net/go/mautrix/bridgev2/networkid"
 	"maunium.net/go/mautrix/bridgev2/simplevent"
@@ -268,6 +271,28 @@ func (gc *GVClient) getMessageMeta(msg *gvproto.Message) (ts time.Time, txnID ne
 }
 
 func (gc *GVClient) convertMessage(ctx context.Context, portal *bridgev2.Portal, intent bridgev2.MatrixAPI, msg *gvproto.Message) (*bridgev2.ConvertedMessage, error) {
+	for _, converted := range []*bridgev2.ConvertedMessage{
+		convertGVVoicemailMessage(msg),
+		convertGVCallMessage(msg),
+		convertGVMissedCallMessage(msg),
+	} {
+		if converted != nil {
+			return converted, nil
+		}
+	}
+	if msg.GetText() == "" && msg.GetMMS() == nil {
+		logUnknownGVMessage(ctx, msg, "empty converted message body")
+		return convertUnknownGVMessage(msg), nil
+	}
+	converted := gc.convertGVTextOrMMSMessage(ctx, portal, intent, msg)
+	if converted == nil || isEmptyGVConvertedMessage(converted) {
+		logUnknownGVMessage(ctx, msg, "converted empty text message")
+		return convertUnknownGVMessage(msg), nil
+	}
+	return converted, nil
+}
+
+func (gc *GVClient) convertGVTextOrMMSMessage(ctx context.Context, portal *bridgev2.Portal, intent bridgev2.MatrixAPI, msg *gvproto.Message) *bridgev2.ConvertedMessage {
 	var content event.MessageEventContent
 	output := &bridgev2.ConvertedMessage{
 		Parts: []*bridgev2.ConvertedMessagePart{{
@@ -300,7 +325,15 @@ func (gc *GVClient) convertMessage(ctx context.Context, portal *bridgev2.Portal,
 	} else {
 		content.Body = msg.Text
 	}
-	return output, nil
+	return output
+}
+
+func isEmptyGVConvertedMessage(msg *bridgev2.ConvertedMessage) bool {
+	if msg == nil || len(msg.Parts) == 0 || msg.Parts[0] == nil || msg.Parts[0].Content == nil {
+		return true
+	}
+	content := msg.Parts[0].Content
+	return content.MsgType == event.MsgText && content.Body == "" && content.FormattedBody == ""
 }
 
 func (gc *GVClient) convertMedia(ctx context.Context, portal *bridgev2.Portal, intent bridgev2.MatrixAPI, att *gvproto.Attachment, into *event.MessageEventContent) {
@@ -369,4 +402,131 @@ func addMediaFailure(into *event.MessageEventContent, message string) {
 		into.Body = message
 		into.MsgType = event.MsgNotice
 	}
+}
+
+func convertGVCallMessage(msg *gvproto.Message) *bridgev2.ConvertedMessage {
+	if msg.GetText() != "" || msg.GetMMS() != nil {
+		return nil
+	}
+	var body string
+	switch msg.GetCoarseType() {
+	case gvproto.Message_CALL_TYPE_INCOMING:
+		switch msg.GetType() {
+		case gvproto.Message_INCOMING_CALL, gvproto.Message_INCOMING_CALL_CANCELLED:
+			body = "Incoming call"
+		default:
+			return nil
+		}
+	case gvproto.Message_CALL_TYPE_OUTGOING:
+		if msg.GetType() != gvproto.Message_OUTGOING_CALL {
+			return nil
+		}
+		body = "Outgoing call"
+	default:
+		return nil
+	}
+	return &bridgev2.ConvertedMessage{
+		Parts: []*bridgev2.ConvertedMessagePart{{
+			Type: event.EventMessage,
+			Content: &event.MessageEventContent{
+				MsgType: event.MsgText,
+				Body:    body,
+				BeeperActionMessage: &event.BeeperActionMessage{
+					Type:     event.BeeperActionMessageCall,
+					CallType: event.BeeperActionMessageCallTypeVoice,
+				},
+			},
+		}},
+	}
+}
+
+func convertGVMissedCallMessage(msg *gvproto.Message) *bridgev2.ConvertedMessage {
+	if msg.GetType() != gvproto.Message_MISSED_CALL || msg.GetCoarseType() != gvproto.Message_CALL_TYPE_MISSED {
+		return nil
+	}
+	return &bridgev2.ConvertedMessage{
+		Parts: []*bridgev2.ConvertedMessagePart{{
+			Type: event.EventMessage,
+			Content: &event.MessageEventContent{
+				MsgType: event.MsgText,
+				Body:    "Missed call",
+				BeeperActionMessage: &event.BeeperActionMessage{
+					Type:     event.BeeperActionMessageCall,
+					CallType: event.BeeperActionMessageCallTypeVoice,
+				},
+			},
+		}},
+	}
+}
+
+func convertGVVoicemailMessage(msg *gvproto.Message) *bridgev2.ConvertedMessage {
+	if msg.GetType() != gvproto.Message_VOICEMAIL || msg.GetCoarseType() != gvproto.Message_CALL_TYPE_VOICEMAIL {
+		return nil
+	}
+	transcript := buildGVVoicemailTranscript(msg.GetTranscript())
+	if transcript == "" {
+		return nil
+	}
+	return &bridgev2.ConvertedMessage{
+		Parts: []*bridgev2.ConvertedMessagePart{{
+			Type: event.EventMessage,
+			Content: &event.MessageEventContent{
+				MsgType: event.MsgText,
+				Body:    "Voicemail: " + transcript,
+			},
+		}},
+	}
+}
+
+func buildGVVoicemailTranscript(transcript *gvproto.Message_Transcript) string {
+	if transcript == nil {
+		return ""
+	}
+	var parts []string
+	for _, token := range transcript.GetTokens() {
+		text := strings.TrimSpace(decodeGVTranscriptToken(token.GetText()))
+		if text == "" {
+			continue
+		}
+		parts = append(parts, text)
+	}
+	return strings.Join(parts, " ")
+}
+
+func decodeGVTranscriptToken(text []byte) string {
+	if len(text) == 0 || !utf8.Valid(text) {
+		return ""
+	}
+	return string(text)
+}
+
+func convertUnknownGVMessage(msg *gvproto.Message) *bridgev2.ConvertedMessage {
+	extra := make(map[string]any)
+	if data, err := proto.Marshal(msg); err == nil {
+		encodedMsg := base64.StdEncoding.EncodeToString(data)
+		if len(encodedMsg) < 16*1024 {
+			extra["fi.mau.gvoice.unsupported_message_data"] = encodedMsg
+		}
+	}
+	return &bridgev2.ConvertedMessage{
+		Parts: []*bridgev2.ConvertedMessagePart{{
+			Type: event.EventMessage,
+			Content: &event.MessageEventContent{
+				MsgType: event.MsgNotice,
+				Body:    "Unknown message type, please view it on the Google Voice app",
+			},
+			Extra: extra,
+		}},
+	}
+}
+
+func logUnknownGVMessage(ctx context.Context, msg *gvproto.Message, reason string) {
+	zerolog.Ctx(ctx).Warn().
+		Str("reason", reason).
+		Str("message_id", msg.GetID()).
+		Str("message_type", msg.GetType().String()).
+		Str("coarse_type", msg.GetCoarseType().String()).
+		Str("text", msg.GetText()).
+		Bool("has_mms", msg.GetMMS() != nil).
+		Msg("Encountered unknown Google Voice message")
 }

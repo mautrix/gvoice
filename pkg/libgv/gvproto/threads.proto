@@ -42,12 +42,19 @@ message ThreadAttributes {
 
 message Message {
     enum Type {
-        UNKNOWN_TYPE = 0;
+        MISSED_CALL = 0;
+        OUTGOING_CALL = 1;
+        VOICEMAIL = 2;
+        INCOMING_CALL = 7;
         SMS_IN = 10;
         SMS_OUT = 11;
+        INCOMING_CALL_CANCELLED = 14;
     }
     enum CoarseType {
-        UNKNOWN_COARSE_TYPE = 0;
+        CALL_TYPE_MISSED = 0;
+        CALL_TYPE_OUTGOING = 1;
+        CALL_TYPE_INCOMING = 2;
+        CALL_TYPE_VOICEMAIL = 3;
         CALL_TYPE_SMS_IN = 5;
         CALL_TYPE_SMS_OUT = 6;
     }
@@ -71,13 +78,26 @@ message Message {
         Status status = 2;
     }
 
+    message Transcript {
+        float confidence = 1;
+        repeated TranscriptToken tokens = 2;
+    }
+
+    message TranscriptToken {
+        bytes text = 1;
+        float confidence = 4;
+    }
+
     string ID = 1;
     int64 timestamp = 2;
     string destinationID = 3;
     Contact contact = 4;
     Type type = 5;
     Status status = 6;
+    Transcript transcript = 7;
+    float durationSeconds = 9;
     string text = 10;
+    string mediaURL = 12;
     CoarseType coarseType = 13;
     TranscriptStatus transcriptStatus = 14;
     MMSMessage MMS = 15;
