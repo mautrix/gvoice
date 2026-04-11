@@ -261,12 +261,6 @@ func (gc *GVClient) getMessageMeta(msg *gvproto.Message) (ts time.Time, txnID ne
 	switch msg.GetType() {
 	case gvproto.Message_SMS_OUT, gvproto.Message_OUTGOING_CALL, gvproto.Message_OUTGOING_CALL_CANCELLED:
 		sender.IsFromMe = true
-	case gvproto.Message_INCOMING_CALL, gvproto.Message_VOICEMAIL, gvproto.Message_MISSED_CALL:
-		// Resolve sender from the remote participant below.
-	default:
-		if msg.GetCoarseType() == gvproto.Message_CALL_TYPE_OUTGOING {
-			sender.IsFromMe = true
-		}
 	}
 	if !sender.IsFromMe {
 		if senderNum := msg.GetMMS().GetSenderPhoneNumber(); senderNum != "" {
