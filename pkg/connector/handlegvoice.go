@@ -29,6 +29,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/rs/zerolog"
+	"go.mau.fi/util/exfmt"
 	"go.mau.fi/util/exmime"
 	"google.golang.org/protobuf/proto"
 	"maunium.net/go/mautrix/bridgev2"
@@ -479,18 +480,8 @@ func formatGVCallDuration(durationSeconds float32) string {
 	}
 	minutes := totalSeconds / 60
 	seconds := totalSeconds % 60
-	minStr := func(m int) string {
-		if m == 1 {
-			return "1 min"
-		}
-		return fmt.Sprintf("%d mins", m)
-	}
-	secStr := func(s int) string {
-		if s == 1 {
-			return "1 sec"
-		}
-		return fmt.Sprintf("%d secs", s)
-	}
+	minStr := exfmt.Pluralizable("min")
+	secStr := exfmt.Pluralizable("sec")
 	switch {
 	case minutes > 0 && seconds > 0:
 		return minStr(minutes) + " " + secStr(seconds)
