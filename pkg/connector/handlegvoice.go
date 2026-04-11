@@ -21,7 +21,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"math"
 	"net/http"
 	"slices"
 	"strconv"
@@ -261,8 +260,7 @@ func (gc *GVClient) getMessageMeta(msg *gvproto.Message) (ts time.Time, txnID ne
 	switch msg.GetType() {
 	case gvproto.Message_SMS_OUT, gvproto.Message_OUTGOING_CALL, gvproto.Message_OUTGOING_CALL_CANCELLED:
 		sender.IsFromMe = true
-	}
-	if !sender.IsFromMe {
+	default:
 		if senderNum := msg.GetMMS().GetSenderPhoneNumber(); senderNum != "" {
 			sender.Sender = gc.makeUserID(senderNum)
 		} else {
@@ -475,7 +473,7 @@ func formatGVVoiceCallBody(durationSeconds float32) string {
 }
 
 func formatGVCallDuration(durationSeconds float32) string {
-	totalSeconds := int(math.Round(float64(durationSeconds)))
+	totalSeconds := int(durationSeconds + 0.5)
 	if totalSeconds <= 0 {
 		return ""
 	}
