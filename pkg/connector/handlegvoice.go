@@ -479,15 +479,25 @@ func formatGVCallDuration(durationSeconds float32) string {
 	}
 	minutes := totalSeconds / 60
 	seconds := totalSeconds % 60
+	minStr := func(m int) string {
+		if m == 1 {
+			return "1 min"
+		}
+		return fmt.Sprintf("%d mins", m)
+	}
+	secStr := func(s int) string {
+		if s == 1 {
+			return "1 sec"
+		}
+		return fmt.Sprintf("%d secs", s)
+	}
 	switch {
 	case minutes > 0 && seconds > 0:
-		return fmt.Sprintf("%d min %d secs", minutes, seconds)
+		return minStr(minutes) + " " + secStr(seconds)
 	case minutes > 0:
-		return fmt.Sprintf("%d min", minutes)
-	case seconds == 1:
-		return "1 sec"
+		return minStr(minutes)
 	default:
-		return fmt.Sprintf("%d secs", seconds)
+		return secStr(seconds)
 	}
 }
 
