@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"math"
 	"net/http"
 	"slices"
 	"strconv"
@@ -257,12 +258,22 @@ func (gc *GVClient) FetchMessages(ctx context.Context, params bridgev2.FetchMess
 
 func (gc *GVClient) getMessageMeta(msg *gvproto.Message) (ts time.Time, txnID networkid.TransactionID, sender bridgev2.EventSender) {
 	ts = time.UnixMilli(msg.Timestamp)
-	if msg.Type == gvproto.Message_SMS_OUT {
+	switch msg.GetType() {
+	case gvproto.Message_SMS_OUT, gvproto.Message_OUTGOING_CALL, gvproto.Message_OUTGOING_CALL_CANCELLED:
 		sender.IsFromMe = true
-	} else if senderNum := msg.GetMMS().GetSenderPhoneNumber(); senderNum != "" {
-		sender.Sender = gc.makeUserID(senderNum)
-	} else {
-		sender.Sender = gc.makeUserID(msg.GetContact().GetPhoneNumber())
+	case gvproto.Message_INCOMING_CALL, gvproto.Message_VOICEMAIL, gvproto.Message_MISSED_CALL:
+		// Resolve sender from the remote participant below.
+	default:
+		if msg.GetCoarseType() == gvproto.Message_CALL_TYPE_OUTGOING {
+			sender.IsFromMe = true
+		}
+	}
+	if !sender.IsFromMe {
+		if senderNum := msg.GetMMS().GetSenderPhoneNumber(); senderNum != "" {
+			sender.Sender = gc.makeUserID(senderNum)
+		} else {
+			sender.Sender = gc.makeUserID(msg.GetContact().GetPhoneNumber())
+		}
 	}
 	if msg.TransactionID != 0 {
 		txnID = networkid.TransactionID(strconv.FormatInt(msg.TransactionID, 10))
@@ -411,17 +422,19 @@ func convertGVCallMessage(msg *gvproto.Message) *bridgev2.ConvertedMessage {
 	var body string
 	switch msg.GetCoarseType() {
 	case gvproto.Message_CALL_TYPE_INCOMING:
+		if msg.GetType() != gvproto.Message_INCOMING_CALL {
+			return nil
+		}
+		body = formatGVVoiceCallBody(msg.GetDurationSeconds())
+	case gvproto.Message_CALL_TYPE_OUTGOING:
 		switch msg.GetType() {
-		case gvproto.Message_INCOMING_CALL, gvproto.Message_INCOMING_CALL_CANCELLED:
-			body = "Incoming call"
+		case gvproto.Message_OUTGOING_CALL:
+			body = formatGVVoiceCallBody(msg.GetDurationSeconds())
+		case gvproto.Message_OUTGOING_CALL_CANCELLED:
+			body = "Unanswered voice call"
 		default:
 			return nil
 		}
-	case gvproto.Message_CALL_TYPE_OUTGOING:
-		if msg.GetType() != gvproto.Message_OUTGOING_CALL {
-			return nil
-		}
-		body = "Outgoing call"
 	default:
 		return nil
 	}
@@ -449,13 +462,40 @@ func convertGVMissedCallMessage(msg *gvproto.Message) *bridgev2.ConvertedMessage
 			Type: event.EventMessage,
 			Content: &event.MessageEventContent{
 				MsgType: event.MsgText,
-				Body:    "Missed call",
+				Body:    "Missed voice call",
 				BeeperActionMessage: &event.BeeperActionMessage{
 					Type:     event.BeeperActionMessageCall,
 					CallType: event.BeeperActionMessageCallTypeVoice,
 				},
 			},
 		}},
+	}
+}
+
+func formatGVVoiceCallBody(durationSeconds float32) string {
+	durationText := formatGVCallDuration(durationSeconds)
+	if durationText == "" {
+		return "Voice call"
+	}
+	return "Voice call • " + durationText
+}
+
+func formatGVCallDuration(durationSeconds float32) string {
+	totalSeconds := int(math.Round(float64(durationSeconds)))
+	if totalSeconds <= 0 {
+		return ""
+	}
+	minutes := totalSeconds / 60
+	seconds := totalSeconds % 60
+	switch {
+	case minutes > 0 && seconds > 0:
+		return fmt.Sprintf("%d min %d secs", minutes, seconds)
+	case minutes > 0:
+		return fmt.Sprintf("%d min", minutes)
+	case seconds == 1:
+		return "1 sec"
+	default:
+		return fmt.Sprintf("%d secs", seconds)
 	}
 }
 

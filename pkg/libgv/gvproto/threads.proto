@@ -43,17 +43,17 @@ message ThreadAttributes {
 message Message {
     enum Type {
         MISSED_CALL = 0;
-        OUTGOING_CALL = 1;
+        INCOMING_CALL = 1;
         VOICEMAIL = 2;
-        INCOMING_CALL = 7;
+        OUTGOING_CALL = 7;
         SMS_IN = 10;
         SMS_OUT = 11;
-        INCOMING_CALL_CANCELLED = 14;
+        OUTGOING_CALL_CANCELLED = 14;
     }
     enum CoarseType {
         CALL_TYPE_MISSED = 0;
-        CALL_TYPE_OUTGOING = 1;
-        CALL_TYPE_INCOMING = 2;
+        CALL_TYPE_INCOMING = 1;
+        CALL_TYPE_OUTGOING = 2;
         CALL_TYPE_VOICEMAIL = 3;
         CALL_TYPE_SMS_IN = 5;
         CALL_TYPE_SMS_OUT = 6;
