@@ -29,6 +29,7 @@ message ReqSendSMS {
             WEBP = 6;
         }
         Type type = 1;
+        bytes data = 2;
         string URL = 4;
     }
 
