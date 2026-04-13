@@ -473,23 +473,22 @@ func formatGVVoiceCallBody(durationSeconds float32) string {
 	return "Voice call • " + durationText
 }
 
+var gvCallDurationNames = map[time.Duration]exfmt.Pluralizer{
+	time.Minute: exfmt.Pluralizable("min"),
+	time.Second: exfmt.Pluralizable("sec"),
+}
+
 func formatGVCallDuration(durationSeconds float32) string {
 	totalSeconds := int(durationSeconds + 0.5)
 	if totalSeconds <= 0 {
 		return ""
 	}
-	minutes := totalSeconds / 60
-	seconds := totalSeconds % 60
-	minStr := exfmt.Pluralizable("min")
-	secStr := exfmt.Pluralizable("sec")
-	switch {
-	case minutes > 0 && seconds > 0:
-		return minStr(minutes) + " " + secStr(seconds)
-	case minutes > 0:
-		return minStr(minutes)
-	default:
-		return secStr(seconds)
-	}
+	return exfmt.DurationCustom(
+		time.Duration(totalSeconds)*time.Second,
+		gvCallDurationNames,
+		time.Minute,
+		time.Second,
+	)
 }
 
 func convertGVVoicemailMessage(msg *gvproto.Message) *bridgev2.ConvertedMessage {
