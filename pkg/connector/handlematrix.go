@@ -84,19 +84,13 @@ func (gc *GVClient) HandleMatrixMessage(ctx context.Context, msg *bridgev2.Matri
 		if err != nil {
 			return nil, fmt.Errorf("%w: %w", bridgev2.ErrMediaDownloadFailed, err)
 		}
-		fileName := msg.Content.Body
 		caption := ""
 		if msg.Content.FileName != "" && msg.Content.FileName != msg.Content.Body {
-			fileName = msg.Content.FileName
 			caption = msg.Content.Body
-		}
-		mediaURL, err := gc.Client.UploadPhoto(ctx, fileName, msg.Content.Info.MimeType, data)
-		if err != nil {
-			return nil, fmt.Errorf("%w: %w", bridgev2.ErrMediaReuploadFailed, err)
 		}
 		req.Media = &gvproto.ReqSendSMS_Media{
 			Type: mediaType,
-			URL:  mediaURL,
+			Data: data,
 		}
 		req.Text = caption
 	default:
