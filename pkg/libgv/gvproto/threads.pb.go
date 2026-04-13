@@ -133,33 +133,33 @@ type Message_Type int32
 
 const (
 	Message_MISSED_CALL             Message_Type = 0
-	Message_OUTGOING_CALL           Message_Type = 1
+	Message_INCOMING_CALL           Message_Type = 1
 	Message_VOICEMAIL               Message_Type = 2
-	Message_INCOMING_CALL           Message_Type = 7
+	Message_OUTGOING_CALL           Message_Type = 7
 	Message_SMS_IN                  Message_Type = 10
 	Message_SMS_OUT                 Message_Type = 11
-	Message_INCOMING_CALL_CANCELLED Message_Type = 14
+	Message_OUTGOING_CALL_CANCELLED Message_Type = 14
 )
 
 // Enum value maps for Message_Type.
 var (
 	Message_Type_name = map[int32]string{
 		0:  "MISSED_CALL",
-		1:  "OUTGOING_CALL",
+		1:  "INCOMING_CALL",
 		2:  "VOICEMAIL",
-		7:  "INCOMING_CALL",
+		7:  "OUTGOING_CALL",
 		10: "SMS_IN",
 		11: "SMS_OUT",
-		14: "INCOMING_CALL_CANCELLED",
+		14: "OUTGOING_CALL_CANCELLED",
 	}
 	Message_Type_value = map[string]int32{
 		"MISSED_CALL":             0,
-		"OUTGOING_CALL":           1,
+		"INCOMING_CALL":           1,
 		"VOICEMAIL":               2,
-		"INCOMING_CALL":           7,
+		"OUTGOING_CALL":           7,
 		"SMS_IN":                  10,
 		"SMS_OUT":                 11,
-		"INCOMING_CALL_CANCELLED": 14,
+		"OUTGOING_CALL_CANCELLED": 14,
 	}
 )
 
@@ -194,8 +194,8 @@ type Message_CoarseType int32
 
 const (
 	Message_CALL_TYPE_MISSED    Message_CoarseType = 0
-	Message_CALL_TYPE_OUTGOING  Message_CoarseType = 1
-	Message_CALL_TYPE_INCOMING  Message_CoarseType = 2
+	Message_CALL_TYPE_INCOMING  Message_CoarseType = 1
+	Message_CALL_TYPE_OUTGOING  Message_CoarseType = 2
 	Message_CALL_TYPE_VOICEMAIL Message_CoarseType = 3
 	Message_CALL_TYPE_SMS_IN    Message_CoarseType = 5
 	Message_CALL_TYPE_SMS_OUT   Message_CoarseType = 6
@@ -205,16 +205,16 @@ const (
 var (
 	Message_CoarseType_name = map[int32]string{
 		0: "CALL_TYPE_MISSED",
-		1: "CALL_TYPE_OUTGOING",
-		2: "CALL_TYPE_INCOMING",
+		1: "CALL_TYPE_INCOMING",
+		2: "CALL_TYPE_OUTGOING",
 		3: "CALL_TYPE_VOICEMAIL",
 		5: "CALL_TYPE_SMS_IN",
 		6: "CALL_TYPE_SMS_OUT",
 	}
 	Message_CoarseType_value = map[string]int32{
 		"CALL_TYPE_MISSED":    0,
-		"CALL_TYPE_OUTGOING":  1,
-		"CALL_TYPE_INCOMING":  2,
+		"CALL_TYPE_INCOMING":  1,
+		"CALL_TYPE_OUTGOING":  2,
 		"CALL_TYPE_VOICEMAIL": 3,
 		"CALL_TYPE_SMS_IN":    5,
 		"CALL_TYPE_SMS_OUT":   6,
@@ -1409,19 +1409,19 @@ const file_threads_proto_rawDesc = "" +
 	"confidence\"\x82\x01\n" +
 	"\x04Type\x12\x0f\n" +
 	"\vMISSED_CALL\x10\x00\x12\x11\n" +
-	"\rOUTGOING_CALL\x10\x01\x12\r\n" +
+	"\rINCOMING_CALL\x10\x01\x12\r\n" +
 	"\tVOICEMAIL\x10\x02\x12\x11\n" +
-	"\rINCOMING_CALL\x10\a\x12\n" +
+	"\rOUTGOING_CALL\x10\a\x12\n" +
 	"\n" +
 	"\x06SMS_IN\x10\n" +
 	"\x12\v\n" +
 	"\aSMS_OUT\x10\v\x12\x1b\n" +
-	"\x17INCOMING_CALL_CANCELLED\x10\x0e\"\x98\x01\n" +
+	"\x17OUTGOING_CALL_CANCELLED\x10\x0e\"\x98\x01\n" +
 	"\n" +
 	"CoarseType\x12\x14\n" +
 	"\x10CALL_TYPE_MISSED\x10\x00\x12\x16\n" +
-	"\x12CALL_TYPE_OUTGOING\x10\x01\x12\x16\n" +
-	"\x12CALL_TYPE_INCOMING\x10\x02\x12\x17\n" +
+	"\x12CALL_TYPE_INCOMING\x10\x01\x12\x16\n" +
+	"\x12CALL_TYPE_OUTGOING\x10\x02\x12\x17\n" +
 	"\x13CALL_TYPE_VOICEMAIL\x10\x03\x12\x14\n" +
 	"\x10CALL_TYPE_SMS_IN\x10\x05\x12\x15\n" +
 	"\x11CALL_TYPE_SMS_OUT\x10\x06\"\x1e\n" +

@@ -29,6 +29,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/rs/zerolog"
+	"go.mau.fi/util/exfmt"
 	"go.mau.fi/util/exmime"
 	"google.golang.org/protobuf/proto"
 	"maunium.net/go/mautrix/bridgev2"
@@ -257,12 +258,15 @@ func (gc *GVClient) FetchMessages(ctx context.Context, params bridgev2.FetchMess
 
 func (gc *GVClient) getMessageMeta(msg *gvproto.Message) (ts time.Time, txnID networkid.TransactionID, sender bridgev2.EventSender) {
 	ts = time.UnixMilli(msg.Timestamp)
-	if msg.Type == gvproto.Message_SMS_OUT {
+	switch msg.GetType() {
+	case gvproto.Message_SMS_OUT, gvproto.Message_OUTGOING_CALL, gvproto.Message_OUTGOING_CALL_CANCELLED:
 		sender.IsFromMe = true
-	} else if senderNum := msg.GetMMS().GetSenderPhoneNumber(); senderNum != "" {
-		sender.Sender = gc.makeUserID(senderNum)
-	} else {
-		sender.Sender = gc.makeUserID(msg.GetContact().GetPhoneNumber())
+	default:
+		if senderNum := msg.GetMMS().GetSenderPhoneNumber(); senderNum != "" {
+			sender.Sender = gc.makeUserID(senderNum)
+		} else {
+			sender.Sender = gc.makeUserID(msg.GetContact().GetPhoneNumber())
+		}
 	}
 	if msg.TransactionID != 0 {
 		txnID = networkid.TransactionID(strconv.FormatInt(msg.TransactionID, 10))
@@ -411,17 +415,19 @@ func convertGVCallMessage(msg *gvproto.Message) *bridgev2.ConvertedMessage {
 	var body string
 	switch msg.GetCoarseType() {
 	case gvproto.Message_CALL_TYPE_INCOMING:
+		if msg.GetType() != gvproto.Message_INCOMING_CALL {
+			return nil
+		}
+		body = formatGVVoiceCallBody(msg.GetDurationSeconds())
+	case gvproto.Message_CALL_TYPE_OUTGOING:
 		switch msg.GetType() {
-		case gvproto.Message_INCOMING_CALL, gvproto.Message_INCOMING_CALL_CANCELLED:
-			body = "Incoming call"
+		case gvproto.Message_OUTGOING_CALL:
+			body = formatGVVoiceCallBody(msg.GetDurationSeconds())
+		case gvproto.Message_OUTGOING_CALL_CANCELLED:
+			body = "Unanswered voice call"
 		default:
 			return nil
 		}
-	case gvproto.Message_CALL_TYPE_OUTGOING:
-		if msg.GetType() != gvproto.Message_OUTGOING_CALL {
-			return nil
-		}
-		body = "Outgoing call"
 	default:
 		return nil
 	}
@@ -449,7 +455,7 @@ func convertGVMissedCallMessage(msg *gvproto.Message) *bridgev2.ConvertedMessage
 			Type: event.EventMessage,
 			Content: &event.MessageEventContent{
 				MsgType: event.MsgText,
-				Body:    "Missed call",
+				Body:    "Missed voice call",
 				BeeperActionMessage: &event.BeeperActionMessage{
 					Type:     event.BeeperActionMessageCall,
 					CallType: event.BeeperActionMessageCallTypeVoice,
@@ -457,6 +463,32 @@ func convertGVMissedCallMessage(msg *gvproto.Message) *bridgev2.ConvertedMessage
 			},
 		}},
 	}
+}
+
+func formatGVVoiceCallBody(durationSeconds float32) string {
+	durationText := formatGVCallDuration(durationSeconds)
+	if durationText == "" {
+		return "Voice call"
+	}
+	return "Voice call • " + durationText
+}
+
+var gvCallDurationNames = map[time.Duration]exfmt.Pluralizer{
+	time.Minute: exfmt.Pluralizable("min"),
+	time.Second: exfmt.Pluralizable("sec"),
+}
+
+func formatGVCallDuration(durationSeconds float32) string {
+	totalSeconds := int(durationSeconds + 0.5)
+	if totalSeconds <= 0 {
+		return ""
+	}
+	return exfmt.DurationCustom(
+		time.Duration(totalSeconds)*time.Second,
+		gvCallDurationNames,
+		time.Minute,
+		time.Second,
+	)
 }
 
 func convertGVVoicemailMessage(msg *gvproto.Message) *bridgev2.ConvertedMessage {
