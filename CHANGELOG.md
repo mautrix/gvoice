@@ -1,3 +1,9 @@
+# v26.04
+
+* Added notification messages for calls and voicemails.
+  * Merging calls into the same room as text messages is not yet implemented.
+* Fixed sending media.
+
 # v25.11
 
 * Added more retries on connection errors
