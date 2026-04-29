@@ -59,7 +59,7 @@ message Event {
 message Empty {}
 
 message EventSub1 {
-    Empty unknown1 = 1;
+    string unknown1 = 1;
 }
 
 message EventSub2 {
