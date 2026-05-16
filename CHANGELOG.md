@@ -1,3 +1,7 @@
+# v26.05
+
+* Fixed parsing error when receiving data from Google Voice.
+
 # v26.04
 
 * Added notification messages for calls and voicemails.
