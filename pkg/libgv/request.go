@@ -217,7 +217,7 @@ func (c *Client) MakeRequest(ctx context.Context, method, baseAddr string, query
 }
 
 func (c *Client) makeRequestDirect(ctx context.Context, method string, parsedAddr *url.URL, headers http.Header, body io.Reader, isRetry bool) (*http.Request, *http.Response, error) {
-	if isRetry {
+	if isRetry && body != nil {
 		bodySeeker, ok := body.(io.Seeker)
 		if ok {
 			_, err := bodySeeker.Seek(0, io.SeekStart)
