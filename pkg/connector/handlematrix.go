@@ -77,6 +77,8 @@ func (gc *GVClient) HandleMatrixMessage(ctx context.Context, msg *bridgev2.Matri
 			mediaType = gvproto.ReqSendSMS_Media_BMP
 		case "image/tiff":
 			mediaType = gvproto.ReqSendSMS_Media_TIFF
+		case "image/gif":
+			mediaType = gvproto.ReqSendSMS_Media_GIF
 		default:
 			return nil, fmt.Errorf("%w %s", bridgev2.ErrUnsupportedMediaType, msg.Content.Info.MimeType)
 		}
