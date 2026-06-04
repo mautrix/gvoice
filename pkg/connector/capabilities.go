@@ -33,7 +33,7 @@ func (gv *GVConnector) GetCapabilities() *bridgev2.NetworkGeneralCapabilities {
 }
 
 func (gv *GVConnector) GetBridgeInfoVersion() (info, caps int) {
-	return 1, 2
+	return 1, 3
 }
 
 var roomCaps = &event.RoomFeatures{
