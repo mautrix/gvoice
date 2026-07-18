@@ -30,14 +30,10 @@ type GVDB struct {
 	*dbutil.Database
 }
 
-var table dbutil.UpgradeTable
+var table = dbutil.BuildUpgradeTable().WithFS(upgrades).Finish()
 
 //go:embed *.sql
 var upgrades embed.FS
-
-func init() {
-	table.RegisterFS(upgrades)
-}
 
 func New(db *dbutil.Database, log zerolog.Logger) *GVDB {
 	db = db.Child("gvoice_version", table, dbutil.ZeroLogger(log))
