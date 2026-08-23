@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"maunium.net/go/mautrix/bridgev2/networkid"
 
+	"go.mau.fi/mautrix-gvoice/pkg/connector/gvdb"
 	"go.mau.fi/mautrix-gvoice/pkg/libgv/gvproto"
 )
 
@@ -115,4 +116,41 @@ func TestThreadCursorRoundTrip(t *testing.T) {
 	threadID, token = decodeThreadCursor("text-thread", "legacy-token")
 	require.Equal(t, "text-thread", threadID)
 	require.Equal(t, "legacy-token", token)
+}
+
+func TestCanonicalThreadIDMergesIntoStaleDBTextPortal(t *testing.T) {
+	// The GV list API only returns the most recent threads, so a contact with
+	// an inactive text thread can be absent from the fetch response. The
+	// bridge still knows their text portal from its own database, and call
+	// threads for that contact must merge into it instead of creating a new
+	// portal per call.
+	callThread := &gvproto.Thread{
+		ID:           "call-thread",
+		PhoneNumbers: []string{"+15551234567"},
+		Folders:      []gvproto.ThreadFolder{gvproto.ThreadFolder_ALL_CALL_THREADS},
+	}
+	fetched := buildTextThreadIndex([]*gvproto.Thread{callThread})
+	merged := mergeTextThreadIndex(fetched, []gvdb.TextPortal{{
+		ID:           "t.+15551234567",
+		Participants: []string{"+15551234567"},
+	}})
+	require.Equal(t, "t.+15551234567", canonicalThreadID(callThread, merged))
+}
+
+func TestMergeTextThreadIndexPrefersFetchedOverDB(t *testing.T) {
+	// A text thread seen in the fetch response is more current than the
+	// database copy and must win for the same participant.
+	fetched := map[string]string{"+11111111111": "t.+11111111111"}
+	merged := mergeTextThreadIndex(fetched, []gvdb.TextPortal{
+		{ID: "t.+11111111111-old", Participants: []string{"+11111111111"}},
+		{ID: "t.+15551234567", Participants: []string{"+15551234567"}},
+		{ID: "t.+12223334444", Participants: []string{"+12223334444", "+13334445555"}},
+		{ID: "t.+19998887777", Participants: nil},
+	})
+	require.Equal(t, "t.+11111111111", merged["+11111111111"])
+	require.Equal(t, "t.+15551234567", merged["+15551234567"])
+	require.Equal(t, "t.+12223334444", merged["+12223334444"])
+	require.Equal(t, "t.+12223334444", merged["+13334445555"])
+	_, ok := merged["+19998887777"]
+	require.False(t, ok)
 }

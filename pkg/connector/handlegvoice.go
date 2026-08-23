@@ -39,6 +39,7 @@ import (
 	"maunium.net/go/mautrix/bridgev2/status"
 	"maunium.net/go/mautrix/event"
 
+	"go.mau.fi/mautrix-gvoice/pkg/connector/gvdb"
 	"go.mau.fi/mautrix-gvoice/pkg/libgv"
 	"go.mau.fi/mautrix-gvoice/pkg/libgv/gvproto"
 )
@@ -168,6 +169,28 @@ func canonicalThreadID(thread *gvproto.Thread, textThreadByParticipant map[strin
 	return thread.ID
 }
 
+// mergeTextThreadIndex combines the text-thread index from the current fetch
+// response with text portals the bridge already knows from its own database,
+// preferring the fetched data. The Google Voice list API only returns the most
+// recent threads, so the text thread of a contact with no recent activity is
+// invisible to the fetch; the database fallback keeps their call and voicemail
+// threads mergeable into the existing text portal instead of creating a new
+// portal per thread.
+func mergeTextThreadIndex(fetched map[string]string, dbPortals []gvdb.TextPortal) map[string]string {
+	merged := make(map[string]string, len(fetched)+len(dbPortals))
+	for participant, threadID := range fetched {
+		merged[participant] = threadID
+	}
+	for _, portal := range dbPortals {
+		for _, participant := range portal.Participants {
+			if _, ok := merged[participant]; !ok {
+				merged[participant] = string(portal.ID)
+			}
+		}
+	}
+	return merged
+}
+
 // buildTextThreadIndex maps each participant's phone number to the ID of
 // their most recently active text thread, used to merge call/voicemail
 // threads into the matching text conversation.
@@ -247,6 +270,12 @@ func (gc *GVClient) fetchNewMessages(ctx context.Context) {
 		return
 	}
 	textThreadByParticipant := buildTextThreadIndex(resp.Threads)
+	dbTextPortals, err := gc.Main.DB.GetTextPortals(ctx, gc.UserLogin.ID)
+	if err != nil {
+		zerolog.Ctx(ctx).Err(err).Msg("Failed to load text portals for thread merge index")
+	} else {
+		textThreadByParticipant = mergeTextThreadIndex(textThreadByParticipant, dbTextPortals)
+	}
 	for _, thread := range resp.Threads {
 		if len(thread.Messages) == 0 {
 			continue

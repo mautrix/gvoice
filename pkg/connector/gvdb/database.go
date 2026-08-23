@@ -19,6 +19,8 @@ package gvdb
 import (
 	"context"
 	"embed"
+	"encoding/json"
+	"fmt"
 	"strconv"
 
 	"github.com/rs/zerolog"
@@ -40,6 +42,48 @@ func New(db *dbutil.Database, log zerolog.Logger) *GVDB {
 	return &GVDB{
 		Database: db,
 	}
+}
+
+// TextPortal is a 1:1 text conversation portal known to the bridge, used to
+// seed the call/voicemail merge index with text threads that the Google Voice
+// list API no longer returns (it only lists the most recent threads).
+type TextPortal struct {
+	ID           networkid.PortalID
+	Participants []string
+}
+
+// GetTextPortals returns the bridge's own text portals for a login, with the
+// participants stored in their metadata. Call threads for a participant whose
+// text thread has fallen off the fetched thread list can still be merged into
+// the portal using this data.
+func (db *GVDB) GetTextPortals(ctx context.Context, loginID networkid.UserLoginID) ([]TextPortal, error) {
+	rows, err := db.Query(ctx, `
+		SELECT id, metadata
+		FROM portal
+		WHERE id LIKE 't.%' AND receiver = $1
+	`, loginID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var portals []TextPortal
+	for rows.Next() {
+		var (
+			id       networkid.PortalID
+			metadata string
+		)
+		if err = rows.Scan(&id, &metadata); err != nil {
+			return nil, err
+		}
+		var meta struct {
+			Participants []string `json:"participants"`
+		}
+		if err = json.Unmarshal([]byte(metadata), &meta); err != nil {
+			return nil, fmt.Errorf("failed to parse portal metadata: %w", err)
+		}
+		portals = append(portals, TextPortal{ID: id, Participants: meta.Participants})
+	}
+	return portals, rows.Err()
 }
 
 func (db *GVDB) GetLoginPrefix(ctx context.Context, loginID networkid.UserLoginID) (string, error) {
