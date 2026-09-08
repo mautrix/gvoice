@@ -797,24 +797,24 @@ var file_responses_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_responses_proto_goTypes = []any{
 	(RespAutocompleteContacts_AffinityResponseContext_Feature_Type)(0), // 0: responses.RespAutocompleteContacts.AffinityResponseContext.Feature.Type
 	(RespLookupContacts_Match_FailureType)(0),                          // 1: responses.RespLookupContacts.Match.FailureType
-	(*RespGetThread)(nil),                                              // 2: responses.RespGetThread
-	(*RespListThreads)(nil),                                            // 3: responses.RespListThreads
-	(*RespSendSMS)(nil),                                                // 4: responses.RespSendSMS
-	(*RespUpdateAttributes)(nil),                                       // 5: responses.RespUpdateAttributes
-	(*RespBatchUpdateAttributes)(nil),                                  // 6: responses.RespBatchUpdateAttributes
-	(*RespGetAccount)(nil),                                             // 7: responses.RespGetAccount
-	(*RespDeleteThread)(nil),                                           // 8: responses.RespDeleteThread
-	(*RespAutocompleteContacts)(nil),                                   // 9: responses.RespAutocompleteContacts
-	(*RespLookupContacts)(nil),                                         // 10: responses.RespLookupContacts
-	(*RespAutocompleteContacts_AffinityResponseContext)(nil),           // 11: responses.RespAutocompleteContacts.AffinityResponseContext
-	(*RespAutocompleteContacts_AffinityResponseContext_Feature)(nil),   // 12: responses.RespAutocompleteContacts.AffinityResponseContext.Feature
-	(*RespLookupContacts_Match)(nil),                                   // 13: responses.RespLookupContacts.Match
-	(*Thread)(nil),                                                     // 14: threads.Thread
-	(ThreadFolder)(0),                                                  // 15: threads.ThreadFolder
-	(*ThreadAttributes)(nil),                                           // 16: threads.ThreadAttributes
-	(*Account)(nil),                                                    // 17: account.Account
-	(*PersonWrapper)(nil),                                              // 18: contacts.PersonWrapper
-	(*ContactID)(nil),                                                  // 19: contacts.ContactID
+	(*RespGetThread)(nil),                                            // 2: responses.RespGetThread
+	(*RespListThreads)(nil),                                          // 3: responses.RespListThreads
+	(*RespSendSMS)(nil),                                              // 4: responses.RespSendSMS
+	(*RespUpdateAttributes)(nil),                                     // 5: responses.RespUpdateAttributes
+	(*RespBatchUpdateAttributes)(nil),                                // 6: responses.RespBatchUpdateAttributes
+	(*RespGetAccount)(nil),                                           // 7: responses.RespGetAccount
+	(*RespDeleteThread)(nil),                                         // 8: responses.RespDeleteThread
+	(*RespAutocompleteContacts)(nil),                                 // 9: responses.RespAutocompleteContacts
+	(*RespLookupContacts)(nil),                                       // 10: responses.RespLookupContacts
+	(*RespAutocompleteContacts_AffinityResponseContext)(nil),         // 11: responses.RespAutocompleteContacts.AffinityResponseContext
+	(*RespAutocompleteContacts_AffinityResponseContext_Feature)(nil), // 12: responses.RespAutocompleteContacts.AffinityResponseContext.Feature
+	(*RespLookupContacts_Match)(nil),                                 // 13: responses.RespLookupContacts.Match
+	(*Thread)(nil),                                                   // 14: threads.Thread
+	(ThreadFolder)(0),                                                // 15: threads.ThreadFolder
+	(*ThreadAttributes)(nil),                                         // 16: threads.ThreadAttributes
+	(*Account)(nil),                                                  // 17: account.Account
+	(*PersonWrapper)(nil),                                            // 18: contacts.PersonWrapper
+	(*ContactID)(nil),                                                // 19: contacts.ContactID
 }
 var file_responses_proto_depIdxs = []int32{
 	14, // 0: responses.RespGetThread.thread:type_name -> threads.Thread
