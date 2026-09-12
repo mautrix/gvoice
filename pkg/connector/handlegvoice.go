@@ -55,7 +55,6 @@ var _ bridgev2.BackfillingNetworkAPI = (*GVClient)(nil)
 
 type gvBackfillData struct {
 	thread    *gvproto.Thread
-	messages  []*gvproto.Message
 	err       error
 	expected  bool
 	completed bool
@@ -151,7 +150,6 @@ threadLoop:
 		lastMessageTS := time.UnixMilli(thread.Messages[0].Timestamp)
 		portalKey := gc.makePortalKey(thread.ID)
 		prevMsg, ok := gc.lastEvents[thread.ID]
-		messages := thread.Messages
 		if !ok {
 			config := gc.Main.Bridge.Config.Backfill
 			backfill := &gvBackfillData{
@@ -175,20 +173,18 @@ threadLoop:
 					limit := config.MaxCatchupMessages
 					if latest == nil {
 						limit = config.MaxInitialMessages
+					} else {
+						prevMsg = latest.Timestamp
 					}
 					backfill.expected = limit > 0 && (latest == nil || lastMessageTS.After(latest.Timestamp))
 					return backfill.expected, nil
 				},
 			})
 			if !result.Success || result.Error != nil {
-				if result.Error != nil {
-					errs = append(errs, fmt.Errorf("failed to resync chat %s: %w", thread.ID, result.Error))
-				} else {
-					errs = append(errs, fmt.Errorf("failed to resync chat %s", thread.ID))
-				}
+				errs = append(errs, fmt.Errorf("failed to resync chat %s: %w", thread.ID, result.Error))
 				continue
 			}
-			if result.Queued {
+			if result.Queued || backfill.completed {
 				gc.lastEvents[thread.ID] = lastMessageTS
 				continue
 			}
@@ -199,12 +195,8 @@ threadLoop:
 				errs = append(errs, fmt.Errorf("backfill did not complete for chat %s", thread.ID))
 				continue
 			}
-			if backfill.messages != nil {
-				messages = backfill.messages
-			}
 		}
-		for i := len(messages) - 1; i >= 0; i-- {
-			msg := messages[i]
+		for _, msg := range slices.Backward(thread.Messages) {
 			ts, txnID, sender := gc.getMessageMeta(msg)
 			if !ts.After(prevMsg) {
 				continue
@@ -230,11 +222,7 @@ threadLoop:
 				TransactionID:      txnID,
 			})
 			if !result.Success || result.Error != nil {
-				if result.Error != nil {
-					errs = append(errs, fmt.Errorf("failed to handle message %s in chat %s: %w", msg.ID, thread.ID, result.Error))
-				} else {
-					errs = append(errs, fmt.Errorf("failed to handle message %s in chat %s", msg.ID, thread.ID))
-				}
+				errs = append(errs, fmt.Errorf("failed to handle message %s in chat %s: %w", msg.ID, thread.ID, result.Error))
 				continue threadLoop
 			}
 		}
@@ -334,7 +322,6 @@ func (gc *GVClient) FetchMessages(ctx context.Context, params bridgev2.FetchMess
 	slices.Reverse(convertedMessages)
 	var completeCallback func()
 	if backfill != nil {
-		backfill.messages = messagesToConvert
 		completeCallback = func() { backfill.completed = true }
 	}
 	return &bridgev2.FetchMessagesResponse{
