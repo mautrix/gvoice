@@ -1,0 +1,18 @@
+syntax = "proto3";
+package push;
+option go_package = "../gvproto";
+
+message ReqRegisterDestination {
+    message Destination {
+        message FCM {
+            string token = 1;
+        }
+
+        string deviceID = 12;
+        FCM fcm = 13;
+    }
+
+    Destination destination = 2;
+}
+
+message RespRegisterDestination {}

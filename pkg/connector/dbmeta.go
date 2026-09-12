@@ -40,8 +40,9 @@ type GhostMetadata struct {
 }
 
 type UserLoginMetadata struct {
-	Cookies map[string]string `json:"cookies"`
-	Prefix  string            `json:"prefix"`
+	Cookies      map[string]string `json:"cookies"`
+	Prefix       string            `json:"prefix"`
+	PushDeviceID string            `json:"push_device_id,omitempty"`
 }
 
 type PortalMetadata struct {
