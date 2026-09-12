@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 	"slices"
@@ -106,19 +107,24 @@ func (gc *GVClient) fetchNewMessagesLoop(ctx context.Context) {
 			zerolog.Ctx(ctx).Debug().Err(err).Msg("Failed to wait for ratelimiter")
 			return
 		}
-		go gc.fetchNewMessages(ctx)
+		go func() {
+			if err := gc.fetchNewMessages(ctx); err != nil {
+				zerolog.Ctx(ctx).Err(err).Msg("Failed to fetch new messages")
+			}
+		}()
 	}
 }
 
-func (gc *GVClient) fetchNewMessages(ctx context.Context) {
+func (gc *GVClient) fetchNewMessages(ctx context.Context) error {
 	gc.fetchEventsLock.Lock()
 	defer gc.fetchEventsLock.Unlock()
 	zerolog.Ctx(ctx).Debug().Msg("Fetching new messages")
 	resp, err := gc.Client.ListThreads(ctx, gvproto.ThreadFolder_ALL_THREADS, "")
 	if err != nil {
-		zerolog.Ctx(ctx).Err(err).Msg("Failed to list threads")
-		return
+		return fmt.Errorf("failed to list threads: %w", err)
 	}
+	var errs []error
+threadLoop:
 	for _, thread := range resp.Threads {
 		if len(thread.Messages) == 0 {
 			continue
@@ -126,9 +132,8 @@ func (gc *GVClient) fetchNewMessages(ctx context.Context) {
 		lastMessageTS := time.UnixMilli(thread.Messages[0].Timestamp)
 		portalKey := gc.makePortalKey(thread.ID)
 		prevMsg, ok := gc.lastEvents[thread.ID]
-		gc.lastEvents[thread.ID] = lastMessageTS
 		if !ok {
-			gc.Main.Bridge.QueueRemoteEvent(gc.UserLogin, &simplevent.ChatResync{
+			result := gc.Main.Bridge.QueueRemoteEvent(gc.UserLogin, &simplevent.ChatResync{
 				EventMeta: simplevent.EventMeta{
 					Type:         bridgev2.RemoteEventChatResync,
 					PortalKey:    portalKey,
@@ -138,14 +143,21 @@ func (gc *GVClient) fetchNewMessages(ctx context.Context) {
 				LatestMessageTS:     lastMessageTS,
 				BundledBackfillData: thread,
 			})
-			continue
+			if !result.Success {
+				if result.Error != nil {
+					errs = append(errs, fmt.Errorf("failed to resync chat %s: %w", thread.ID, result.Error))
+				} else {
+					errs = append(errs, fmt.Errorf("failed to resync chat %s", thread.ID))
+				}
+				continue
+			}
 		}
 		for _, msg := range thread.Messages {
 			ts, txnID, sender := gc.getMessageMeta(msg)
 			if !ts.After(prevMsg) {
 				break
 			}
-			gc.Main.Bridge.QueueRemoteEvent(gc.UserLogin, &simplevent.Message[*gvproto.Message]{
+			result := gc.Main.Bridge.QueueRemoteEvent(gc.UserLogin, &simplevent.Message[*gvproto.Message]{
 				EventMeta: simplevent.EventMeta{
 					Type: bridgev2.RemoteEventMessage,
 					LogContext: func(c zerolog.Context) zerolog.Context {
@@ -165,8 +177,18 @@ func (gc *GVClient) fetchNewMessages(ctx context.Context) {
 				ID:                 networkid.MessageID(msg.ID),
 				TransactionID:      txnID,
 			})
+			if !result.Success {
+				if result.Error != nil {
+					errs = append(errs, fmt.Errorf("failed to handle message %s in chat %s: %w", msg.ID, thread.ID, result.Error))
+				} else {
+					errs = append(errs, fmt.Errorf("failed to handle message %s in chat %s", msg.ID, thread.ID))
+				}
+				continue threadLoop
+			}
 		}
+		gc.lastEvents[thread.ID] = lastMessageTS
 	}
+	return errors.Join(errs...)
 }
 
 func (gc *GVClient) FetchMessages(ctx context.Context, params bridgev2.FetchMessagesParams) (*bridgev2.FetchMessagesResponse, error) {
