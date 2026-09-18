@@ -45,6 +45,12 @@ type UserLoginMetadata struct {
 	PushDeviceID string            `json:"push_device_id,omitempty"`
 }
 
+func (m *UserLoginMetadata) CopyFrom(other any) {
+	updated := other.(*UserLoginMetadata)
+	m.Cookies = updated.Cookies
+	m.Prefix = updated.Prefix
+}
+
 type PortalMetadata struct {
 	Participants []string `json:"participants"`
 }
