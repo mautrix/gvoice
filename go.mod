@@ -7,6 +7,7 @@ toolchain go1.27.1
 tool go.mau.fi/util/cmd/maubuild
 
 require (
+	github.com/google/uuid v1.6.0
 	github.com/rs/zerolog v1.35.1
 	github.com/stretchr/testify v1.12.0
 	go.mau.fi/util v0.10.1

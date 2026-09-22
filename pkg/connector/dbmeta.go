@@ -40,8 +40,15 @@ type GhostMetadata struct {
 }
 
 type UserLoginMetadata struct {
-	Cookies map[string]string `json:"cookies"`
-	Prefix  string            `json:"prefix"`
+	Cookies      map[string]string `json:"cookies"`
+	Prefix       string            `json:"prefix"`
+	PushDeviceID string            `json:"push_device_id,omitempty"`
+}
+
+func (m *UserLoginMetadata) CopyFrom(other any) {
+	updated := other.(*UserLoginMetadata)
+	m.Cookies = updated.Cookies
+	m.Prefix = updated.Prefix
 }
 
 type PortalMetadata struct {
