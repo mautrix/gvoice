@@ -85,6 +85,7 @@ func (gv *GVConnector) LoadUserLogin(ctx context.Context, login *bridgev2.UserLo
 var _ bridgev2.NetworkAPI = (*GVClient)(nil)
 
 func (gc *GVClient) Connect(ctx context.Context) {
+	gc.UserLogin.BridgeState.Send(status.BridgeState{StateEvent: status.StateConnecting})
 	_, _ = gc.Main.Bridge.GetGhostByID(ctx, "")
 	_, err := gc.Client.GetAccount(ctx)
 	if err != nil {
