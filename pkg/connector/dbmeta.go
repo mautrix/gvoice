@@ -28,7 +28,9 @@ func (gv *GVConnector) GetDBMetaTypes() database.MetaTypes {
 		Ghost: func() any {
 			return &GhostMetadata{}
 		},
-		Message: nil,
+		Message: func() any {
+			return &MessageMetadata{}
+		},
 		UserLogin: func() any {
 			return &UserLoginMetadata{}
 		},
@@ -53,4 +55,9 @@ func (m *UserLoginMetadata) CopyFrom(other any) {
 
 type PortalMetadata struct {
 	Participants []string `json:"participants"`
+}
+
+type MessageMetadata struct {
+	// The Google Voice thread the message came from, if it's not the thread of the portal.
+	ThreadID string `json:"thread_id,omitempty"`
 }
