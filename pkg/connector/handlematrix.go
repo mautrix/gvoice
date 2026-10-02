@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -124,22 +125,68 @@ func (gc *GVClient) HandleMatrixMessage(ctx context.Context, msg *bridgev2.Matri
 	}, nil
 }
 
+func (gc *GVClient) getMergedThreads(ctx context.Context, portal *bridgev2.Portal, start, end time.Time) (threadIDs []string, hasOwnMessages bool, err error) {
+	messages, err := gc.Main.Bridge.DB.Message.GetMessagesBetweenTimeQuery(ctx, portal.PortalKey, start, end)
+	if err != nil {
+		return nil, false, err
+	}
+	for _, msg := range messages {
+		threadID := msg.Metadata.(*MessageMetadata).ThreadID
+		if threadID == "" || threadID == string(portal.ID) {
+			hasOwnMessages = true
+		} else if !slices.Contains(threadIDs, threadID) {
+			threadIDs = append(threadIDs, threadID)
+		}
+	}
+	return threadIDs, hasOwnMessages, nil
+}
+
 func (gc *GVClient) HandleMatrixReadReceipt(ctx context.Context, msg *bridgev2.MatrixReadReceipt) error {
-	resp, err := gc.Client.UpdateThreadAttributes(ctx, &gvproto.ReqUpdateAttributes{
-		Attributes: &gvproto.ThreadAttributes{
-			ThreadID: string(msg.Portal.ID),
-			Read:     true,
-		},
-		OtherAttributes: &gvproto.ThreadAttributes{
-			Read: true,
-		},
-		UnknownInt: 1,
-	})
-	zerolog.Ctx(ctx).Trace().Any("resp", resp).Msg("Update attributes response")
-	return err
+	start := msg.ReadUpTo.Add(-7 * 24 * time.Hour)
+	if msg.LastRead.After(start) {
+		start = msg.LastRead
+	}
+	threadIDs, hasOwnMessages, err := gc.getMergedThreads(ctx, msg.Portal, start, msg.ReadUpTo)
+	if err != nil {
+		return fmt.Errorf("failed to get merged threads: %w", err)
+	}
+	if hasOwnMessages {
+		threadIDs = append(threadIDs, string(msg.Portal.ID))
+	}
+	var errs []error
+	for _, threadID := range threadIDs {
+		resp, err := gc.Client.UpdateThreadAttributes(ctx, &gvproto.ReqUpdateAttributes{
+			Attributes: &gvproto.ThreadAttributes{
+				ThreadID: threadID,
+				Read:     true,
+			},
+			OtherAttributes: &gvproto.ThreadAttributes{
+				Read: true,
+			},
+			UnknownInt: 1,
+		})
+		zerolog.Ctx(ctx).Trace().Str("thread_id", threadID).Any("resp", resp).Msg("Update attributes response")
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to mark %s as read: %w", threadID, err))
+		}
+	}
+	return errors.Join(errs...)
 }
 
 func (gc *GVClient) HandleMatrixDeleteChat(ctx context.Context, chat *bridgev2.MatrixDeleteChat) error {
-	_, err := gc.Client.DeleteThread(ctx, string(chat.Portal.ID))
-	return err
+	threadIDs, hasOwnMessages, err := gc.getMergedThreads(ctx, chat.Portal, time.Unix(0, 0), time.Now().Add(24*time.Hour))
+	if err != nil {
+		return fmt.Errorf("failed to get merged threads: %w", err)
+	}
+	for _, threadID := range threadIDs {
+		_, err = gc.Client.DeleteThread(ctx, threadID)
+		if err != nil {
+			zerolog.Ctx(ctx).Err(err).Str("thread_id", threadID).Msg("Failed to delete merged thread")
+		}
+	}
+	if hasOwnMessages || len(threadIDs) == 0 {
+		_, err = gc.Client.DeleteThread(ctx, string(chat.Portal.ID))
+		return err
+	}
+	return nil
 }

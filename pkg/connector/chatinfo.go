@@ -54,6 +54,22 @@ func (gc *GVClient) makePortalKey(threadID string) networkid.PortalKey {
 	}
 }
 
+// getCallThreadPeer returns the other party of a 1:1 call or voicemail thread.
+// Google Voice puts each call in its own thread, but they're bridged into the SMS thread instead.
+func getCallThreadPeer(thread *gvproto.Thread) string {
+	if thread.IsText || strings.HasPrefix(thread.ID, "t.") || len(thread.PhoneNumbers) != 1 || !strings.HasPrefix(thread.PhoneNumbers[0], "+") {
+		return ""
+	}
+	return thread.PhoneNumbers[0]
+}
+
+func (gc *GVClient) makeThreadPortalKey(thread *gvproto.Thread) networkid.PortalKey {
+	if peer := getCallThreadPeer(thread); peer != "" {
+		return gc.makePortalKey("t." + peer)
+	}
+	return gc.makePortalKey(thread.ID)
+}
+
 func (gc *GVClient) makeUserID(e164 string) networkid.UserID {
 	return networkid.UserID(fmt.Sprintf("%s.%s", gc.UserLogin.Metadata.(*UserLoginMetadata).Prefix, e164))
 }
