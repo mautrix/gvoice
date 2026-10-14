@@ -54,6 +54,7 @@ type GVClient struct {
 	wakeupMessageFetcher chan struct{}
 	fetchEventsLimiter   *rate.Limiter
 	fetchEventsLock      sync.Mutex
+	threadSyncStarted    atomic.Bool
 
 	contactCache     map[string]*ProcessedContact
 	contactCacheLock sync.Mutex

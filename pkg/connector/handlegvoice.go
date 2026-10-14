@@ -132,11 +132,9 @@ func (gc *GVClient) fetchNewMessages(ctx context.Context, targetThreadID string)
 		return fmt.Errorf("failed to list threads: %w", err)
 	}
 	var errs []error
-	if len(gc.lastEvents) == 0 {
-		err = gc.fetchOlderThreads(ctx, resp)
-		if err != nil {
-			errs = append(errs, err)
-		}
+	meta := gc.UserLogin.Metadata.(*UserLoginMetadata)
+	if !meta.ThreadSyncDone && !gc.Main.Bridge.Background && gc.threadSyncStarted.CompareAndSwap(false, true) {
+		go gc.syncOlderThreads(ctx, resp)
 	}
 	if targetThreadID != "" && !slices.ContainsFunc(resp.Threads, func(thread *gvproto.Thread) bool {
 		return thread.ID == targetThreadID
@@ -148,8 +146,12 @@ func (gc *GVClient) fetchNewMessages(ctx context.Context, targetThreadID string)
 			resp.Threads = append(resp.Threads, target.Thread)
 		}
 	}
+	return errors.Join(append(errs, gc.handleThreads(ctx, resp.Threads)...)...)
+}
+
+func (gc *GVClient) handleThreads(ctx context.Context, threads []*gvproto.Thread) (errs []error) {
 threadLoop:
-	for _, thread := range resp.Threads {
+	for _, thread := range threads {
 		if len(thread.Messages) == 0 {
 			continue
 		}
@@ -239,22 +241,46 @@ threadLoop:
 		}
 		gc.lastEvents[thread.ID] = lastMessageTS
 	}
-	return errors.Join(errs...)
+	return errs
 }
 
-func (gc *GVClient) fetchOlderThreads(ctx context.Context, resp *gvproto.RespListThreads) error {
-	paginationToken := resp.PaginationToken
-	for len(resp.Threads) < gc.Main.Config.InitialThreadSyncCount && paginationToken != "" {
-		page, err := gc.Client.ListThreads(ctx, gvproto.ThreadFolder_ALL_THREADS, paginationToken, "")
-		if err != nil {
-			return fmt.Errorf("failed to list older threads: %w", err)
-		} else if len(page.Threads) == 0 {
-			break
-		}
-		resp.Threads = append(resp.Threads, page.Threads...)
-		paginationToken = page.PaginationToken
+func (gc *GVClient) syncOlderThreads(ctx context.Context, firstPage *gvproto.RespListThreads) {
+	defer gc.threadSyncStarted.Store(false)
+	log := zerolog.Ctx(ctx).With().Str("action", "sync older threads").Logger()
+	meta := gc.UserLogin.Metadata.(*UserLoginMetadata)
+	limit := gc.Main.Config.InitialThreadSyncCount
+	if meta.ThreadSyncToken == "" {
+		meta.ThreadSyncCount = len(firstPage.Threads)
+		meta.ThreadSyncToken = firstPage.PaginationToken
 	}
-	return nil
+	for meta.ThreadSyncToken != "" && (limit < 0 || meta.ThreadSyncCount < limit) {
+		page, err := gc.Client.ListThreads(ctx, gvproto.ThreadFolder_ALL_THREADS, meta.ThreadSyncToken, "")
+		if err != nil {
+			log.Err(err).Msg("Failed to list older threads")
+			return
+		}
+		gc.fetchEventsLock.Lock()
+		err = errors.Join(gc.handleThreads(ctx, page.Threads)...)
+		gc.fetchEventsLock.Unlock()
+		if err != nil {
+			log.Err(err).Msg("Failed to sync some older threads")
+		}
+		meta.ThreadSyncCount += len(page.Threads)
+		meta.ThreadSyncToken = page.PaginationToken
+		if len(page.Threads) == 0 {
+			meta.ThreadSyncToken = ""
+		}
+		if err = gc.UserLogin.Save(ctx); err != nil {
+			log.Err(err).Msg("Failed to save thread sync progress")
+			return
+		}
+	}
+	meta.ThreadSyncDone = true
+	meta.ThreadSyncToken = ""
+	if err := gc.UserLogin.Save(ctx); err != nil {
+		log.Err(err).Msg("Failed to save thread sync completion")
+	}
+	log.Debug().Int("thread_count", meta.ThreadSyncCount).Msg("Finished syncing older threads")
 }
 
 func (gc *GVClient) isMessageBridged(ctx context.Context, msg *gvproto.Message) bool {
