@@ -244,7 +244,8 @@ threadLoop:
 
 func (gc *GVClient) fetchOlderThreads(ctx context.Context, resp *gvproto.RespListThreads) error {
 	paginationToken := resp.PaginationToken
-	for len(resp.Threads) < gc.Main.Config.InitialThreadSyncCount && paginationToken != "" {
+	limit := gc.Main.Config.InitialThreadSyncCount
+	for (limit < 0 || len(resp.Threads) < limit) && paginationToken != "" {
 		page, err := gc.Client.ListThreads(ctx, gvproto.ThreadFolder_ALL_THREADS, paginationToken, "")
 		if err != nil {
 			return fmt.Errorf("failed to list older threads: %w", err)
