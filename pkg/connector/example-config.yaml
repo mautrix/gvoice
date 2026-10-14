@@ -4,3 +4,5 @@
 #  .Contact.FirstName - first name from contact list
 #  .PhoneNumber
 displayname_template: "{{ or .Contact.Name .Name }}"
+# Number of threads to sync when connecting to Google Voice. Threads are fetched in pages of 20.
+initial_thread_sync_count: 20

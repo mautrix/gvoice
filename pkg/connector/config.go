@@ -31,7 +31,8 @@ import (
 var ExampleConfig string
 
 type Config struct {
-	DisplaynameTemplate string `yaml:"displayname_template"`
+	DisplaynameTemplate    string `yaml:"displayname_template"`
+	InitialThreadSyncCount int    `yaml:"initial_thread_sync_count"`
 
 	displaynameTemplate *template.Template `yaml:"-"`
 }
@@ -73,4 +74,5 @@ func (c Config) FormatDisplayname(info *gvproto.Contact, contact *ProcessedConta
 
 func upgradeConfig(helper up.Helper) {
 	helper.Copy(up.Str, "displayname_template")
+	helper.Copy(up.Int, "initial_thread_sync_count")
 }

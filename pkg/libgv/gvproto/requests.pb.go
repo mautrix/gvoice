@@ -264,14 +264,15 @@ func (x *UnknownWrapper) GetUnknownInt3() int32 {
 }
 
 type ReqListThreads struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	Folder         ThreadFolder           `protobuf:"varint,1,opt,name=folder,proto3,enum=threads.ThreadFolder" json:"folder,omitempty"`
-	UnknownInt2    int32                  `protobuf:"varint,2,opt,name=unknownInt2,proto3" json:"unknownInt2,omitempty"` // 10 or 20
-	UnknownInt3    int32                  `protobuf:"varint,3,opt,name=unknownInt3,proto3" json:"unknownInt3,omitempty"` // 15
-	VersionToken   string                 `protobuf:"bytes,5,opt,name=versionToken,proto3" json:"versionToken,omitempty"`
-	UnknownWrapper *UnknownWrapper        `protobuf:"bytes,6,opt,name=unknownWrapper,proto3" json:"unknownWrapper,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Folder          ThreadFolder           `protobuf:"varint,1,opt,name=folder,proto3,enum=threads.ThreadFolder" json:"folder,omitempty"`
+	UnknownInt2     int32                  `protobuf:"varint,2,opt,name=unknownInt2,proto3" json:"unknownInt2,omitempty"` // 10 or 20
+	UnknownInt3     int32                  `protobuf:"varint,3,opt,name=unknownInt3,proto3" json:"unknownInt3,omitempty"` // 15
+	PaginationToken string                 `protobuf:"bytes,4,opt,name=paginationToken,proto3" json:"paginationToken,omitempty"`
+	VersionToken    string                 `protobuf:"bytes,5,opt,name=versionToken,proto3" json:"versionToken,omitempty"`
+	UnknownWrapper  *UnknownWrapper        `protobuf:"bytes,6,opt,name=unknownWrapper,proto3" json:"unknownWrapper,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *ReqListThreads) Reset() {
@@ -323,6 +324,13 @@ func (x *ReqListThreads) GetUnknownInt3() int32 {
 		return x.UnknownInt3
 	}
 	return 0
+}
+
+func (x *ReqListThreads) GetPaginationToken() string {
+	if x != nil {
+		return x.PaginationToken
+	}
+	return ""
 }
 
 func (x *ReqListThreads) GetVersionToken() string {
@@ -859,11 +867,12 @@ const file_requests_proto_rawDesc = "" +
 	"\x04WEBP\x10\x06\"T\n" +
 	"\x0eUnknownWrapper\x12 \n" +
 	"\vunknownInt2\x18\x02 \x01(\x05R\vunknownInt2\x12 \n" +
-	"\vunknownInt3\x18\x03 \x01(\x05R\vunknownInt3\"\xe9\x01\n" +
+	"\vunknownInt3\x18\x03 \x01(\x05R\vunknownInt3\"\x93\x02\n" +
 	"\x0eReqListThreads\x12-\n" +
 	"\x06folder\x18\x01 \x01(\x0e2\x15.threads.ThreadFolderR\x06folder\x12 \n" +
 	"\vunknownInt2\x18\x02 \x01(\x05R\vunknownInt2\x12 \n" +
-	"\vunknownInt3\x18\x03 \x01(\x05R\vunknownInt3\x12\"\n" +
+	"\vunknownInt3\x18\x03 \x01(\x05R\vunknownInt3\x12(\n" +
+	"\x0fpaginationToken\x18\x04 \x01(\tR\x0fpaginationToken\x12\"\n" +
 	"\fversionToken\x18\x05 \x01(\tR\fversionToken\x12@\n" +
 	"\x0eunknownWrapper\x18\x06 \x01(\v2\x18.requests.UnknownWrapperR\x0eunknownWrapper\"\xc4\x01\n" +
 	"\fReqGetThread\x12\x1a\n" +
