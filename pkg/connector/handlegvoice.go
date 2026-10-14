@@ -243,18 +243,13 @@ threadLoop:
 }
 
 func (gc *GVClient) fetchOlderThreads(ctx context.Context, resp *gvproto.RespListThreads) error {
-	chats := make(map[networkid.PortalKey]struct{})
-	for _, thread := range resp.Threads {
-		chats[gc.makeThreadPortalKey(thread)] = struct{}{}
-	}
 	paginationToken := resp.PaginationToken
-	for len(chats) < gc.Main.Config.InitialChatSyncCount && paginationToken != "" {
+	for len(resp.Threads) < gc.Main.Config.InitialThreadSyncCount && paginationToken != "" {
 		page, err := gc.Client.ListThreads(ctx, gvproto.ThreadFolder_ALL_THREADS, paginationToken, "")
 		if err != nil {
 			return fmt.Errorf("failed to list older threads: %w", err)
-		}
-		for _, thread := range page.Threads {
-			chats[gc.makeThreadPortalKey(thread)] = struct{}{}
+		} else if len(page.Threads) == 0 {
+			break
 		}
 		resp.Threads = append(resp.Threads, page.Threads...)
 		paginationToken = page.PaginationToken
