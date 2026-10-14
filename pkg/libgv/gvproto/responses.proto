@@ -12,6 +12,7 @@ message RespGetThread {
 
 message RespListThreads {
     repeated threads.Thread threads = 1;
+    string paginationToken = 2;
     string versionToken = 3;
 }
 

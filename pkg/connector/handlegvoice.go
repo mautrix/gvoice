@@ -127,11 +127,17 @@ func (gc *GVClient) fetchNewMessages(ctx context.Context, targetThreadID string)
 	gc.fetchEventsLock.Lock()
 	defer gc.fetchEventsLock.Unlock()
 	zerolog.Ctx(ctx).Debug().Msg("Fetching new messages")
-	resp, err := gc.Client.ListThreads(ctx, gvproto.ThreadFolder_ALL_THREADS, "")
+	resp, err := gc.Client.ListThreads(ctx, gvproto.ThreadFolder_ALL_THREADS, "", "")
 	if err != nil {
 		return fmt.Errorf("failed to list threads: %w", err)
 	}
 	var errs []error
+	if len(gc.lastEvents) == 0 {
+		err = gc.fetchOlderThreads(ctx, resp)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
 	if targetThreadID != "" && !slices.ContainsFunc(resp.Threads, func(thread *gvproto.Thread) bool {
 		return thread.ID == targetThreadID
 	}) {
@@ -234,6 +240,26 @@ threadLoop:
 		gc.lastEvents[thread.ID] = lastMessageTS
 	}
 	return errors.Join(errs...)
+}
+
+func (gc *GVClient) fetchOlderThreads(ctx context.Context, resp *gvproto.RespListThreads) error {
+	chats := make(map[networkid.PortalKey]struct{})
+	for _, thread := range resp.Threads {
+		chats[gc.makeThreadPortalKey(thread)] = struct{}{}
+	}
+	paginationToken := resp.PaginationToken
+	for len(chats) < gc.Main.Config.InitialChatSyncCount && paginationToken != "" {
+		page, err := gc.Client.ListThreads(ctx, gvproto.ThreadFolder_ALL_THREADS, paginationToken, "")
+		if err != nil {
+			return fmt.Errorf("failed to list older threads: %w", err)
+		}
+		for _, thread := range page.Threads {
+			chats[gc.makeThreadPortalKey(thread)] = struct{}{}
+		}
+		resp.Threads = append(resp.Threads, page.Threads...)
+		paginationToken = page.PaginationToken
+	}
+	return nil
 }
 
 func (gc *GVClient) isMessageBridged(ctx context.Context, msg *gvproto.Message) bool {
