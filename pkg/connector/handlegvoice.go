@@ -132,10 +132,17 @@ func (gc *GVClient) fetchNewMessages(ctx context.Context, targetThreadID string)
 		return fmt.Errorf("failed to list threads: %w", err)
 	}
 	var errs []error
-	if len(gc.lastEvents) == 0 {
+	meta := gc.UserLogin.Metadata.(*UserLoginMetadata)
+	if len(gc.lastEvents) == 0 && !meta.ThreadSyncDone && !gc.Main.Bridge.Background {
 		err = gc.fetchOlderThreads(ctx, resp)
 		if err != nil {
 			errs = append(errs, err)
+		} else {
+			meta.ThreadSyncDone = true
+			err = gc.UserLogin.Save(ctx)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("failed to save thread sync state: %w", err))
+			}
 		}
 	}
 	if targetThreadID != "" && !slices.ContainsFunc(resp.Threads, func(thread *gvproto.Thread) bool {

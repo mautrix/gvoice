@@ -42,9 +42,10 @@ type GhostMetadata struct {
 }
 
 type UserLoginMetadata struct {
-	Cookies      map[string]string `json:"cookies"`
-	Prefix       string            `json:"prefix"`
-	PushDeviceID string            `json:"push_device_id,omitempty"`
+	Cookies        map[string]string `json:"cookies"`
+	Prefix         string            `json:"prefix"`
+	PushDeviceID   string            `json:"push_device_id,omitempty"`
+	ThreadSyncDone bool              `json:"thread_sync_done,omitempty"`
 }
 
 func (m *UserLoginMetadata) CopyFrom(other any) {
