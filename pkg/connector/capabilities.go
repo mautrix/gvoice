@@ -26,6 +26,12 @@ import (
 var generalCaps = &bridgev2.NetworkGeneralCapabilities{
 	DisappearingMessages: false,
 	AggressiveUpdateInfo: false,
+	Provisioning: bridgev2.ProvisioningCapabilities{
+		ResolveIdentifier: bridgev2.ResolveIdentifierCapabilities{
+			CreateDM: true,
+			AnyPhone: true,
+		},
+	},
 }
 
 func (gv *GVConnector) GetCapabilities() *bridgev2.NetworkGeneralCapabilities {
