@@ -77,7 +77,6 @@ func init() {
 	dmCaps = roomCaps.Clone()
 	dmCaps.ID += "+dm"
 	dmCaps.BlockUser = true
-	dmCaps.ReportSpam = true
 }
 
 func (gc *GVClient) GetCapabilities(ctx context.Context, portal *bridgev2.Portal) *event.RoomFeatures {

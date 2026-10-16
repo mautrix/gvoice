@@ -212,10 +212,10 @@ func (gc *GVClient) HandleMatrixDeleteChat(ctx context.Context, chat *bridgev2.M
 }
 
 func (gc *GVClient) HandleMatrixBlockUser(ctx context.Context, msg *bridgev2.MatrixBlockUser) error {
-	if msg.Content.ReportSpam && !msg.Content.Block {
-		return errors.New("spam reporting requires blocking the user")
+	if msg.Content.ReportSpam {
+		return errors.New("spam reporting is not supported")
 	}
-	err := gc.setThreadBlocked(ctx, string(msg.Portal.ID), msg.Content.Block, msg.Content.ReportSpam)
+	err := gc.setThreadBlocked(ctx, string(msg.Portal.ID), msg.Content.Block)
 	if !libgv.IsNotFoundError(err) {
 		return err
 	}
@@ -226,19 +226,17 @@ func (gc *GVClient) HandleMatrixBlockUser(ctx context.Context, msg *bridgev2.Mat
 	} else if len(threadIDs) == 0 {
 		return fmt.Errorf("conversation doesn't exist on Google Voice yet: %w", err)
 	}
-	return gc.setThreadBlocked(ctx, threadIDs[0], msg.Content.Block, msg.Content.ReportSpam)
+	return gc.setThreadBlocked(ctx, threadIDs[0], msg.Content.Block)
 }
 
-func (gc *GVClient) setThreadBlocked(ctx context.Context, threadID string, blocked, spam bool) error {
+func (gc *GVClient) setThreadBlocked(ctx context.Context, threadID string, blocked bool) error {
 	_, err := gc.Client.UpdateThreadAttributes(ctx, &gvproto.ReqUpdateAttributes{
 		Attributes: &gvproto.ThreadAttributes{
 			ThreadID:  threadID,
 			IsBlocked: blocked,
-			IsSpammer: spam,
 		},
 		OtherAttributes: &gvproto.ThreadAttributes{
 			IsBlocked: true,
-			IsSpammer: spam,
 		},
 		UnknownInt: 1,
 	})
