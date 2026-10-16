@@ -70,6 +70,12 @@ func (gc *GVClient) makeThreadPortalKey(thread *gvproto.Thread) networkid.Portal
 	return gc.makePortalKey(thread.ID)
 }
 
+func isDMBlocked(thread *gvproto.Thread) bool {
+	return slices.ContainsFunc(thread.Contacts, func(contact *gvproto.Contact) bool {
+		return contact.PhoneNumber == thread.PhoneNumbers[0] && contact.Blocked
+	})
+}
+
 func (gc *GVClient) makeUserID(e164 string) networkid.UserID {
 	return networkid.UserID(fmt.Sprintf("%s.%s", gc.UserLogin.Metadata.(*UserLoginMetadata).Prefix, e164))
 }
@@ -93,6 +99,7 @@ func (gc *GVClient) wrapChatInfo(ctx context.Context, info *gvproto.Thread) *bri
 	if len(info.PhoneNumbers) == 1 {
 		wrapped.Members.OtherUserID = gc.makeUserID(info.PhoneNumbers[0])
 		wrapped.Type = ptr.Ptr(database.RoomTypeDM)
+		wrapped.UserBlocked = ptr.Ptr(isDMBlocked(info))
 	} else {
 		wrapped.Type = ptr.Ptr(database.RoomTypeDefault)
 	}
