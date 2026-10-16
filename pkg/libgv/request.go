@@ -116,6 +116,11 @@ func (re *ResponseError) IsAuthError() bool {
 	return re.Resp.StatusCode == http.StatusUnauthorized || re.Resp.StatusCode == http.StatusForbidden
 }
 
+func IsNotFoundError(err error) bool {
+	var re *ResponseError
+	return errors.As(err, &re) && re.Resp.StatusCode == http.StatusNotFound
+}
+
 func IsAuthError(err error) bool {
 	var re *ResponseError
 	if errors.As(err, &re) {

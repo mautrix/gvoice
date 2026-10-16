@@ -12,6 +12,7 @@ import (
 	"maunium.net/go/mautrix/bridgev2"
 	"maunium.net/go/mautrix/bridgev2/networkid"
 
+	"go.mau.fi/mautrix-gvoice/pkg/libgv"
 	"go.mau.fi/mautrix-gvoice/pkg/libgv/gvproto"
 )
 
@@ -78,29 +79,41 @@ func (gc *GVClient) ResolveIdentifier(ctx context.Context, identifier string, cr
 	if err != nil {
 		return nil, fmt.Errorf("failed to get ghost: %w", err)
 	}
-	var userInfo *bridgev2.UserInfo
-	// Don't replace the name Google Voice gave an existing ghost with the bare number.
-	if ghost.Name == "" {
-		userInfo = gc.wrapUserInfo(ctx, &gvproto.Contact{PhoneNumber: phone, Name: phone})
+	// Google Voice uses the number as the contact name when the number isn't saved.
+	contact := &gvproto.Contact{PhoneNumber: phone, Name: phone}
+	if !createChat {
+		return &bridgev2.ResolveIdentifierResponse{
+			Ghost:    ghost,
+			UserID:   userID,
+			UserInfo: gc.wrapUserInfo(ctx, contact),
+		}, nil
 	}
-	resp := &bridgev2.ResolveIdentifierResponse{
+	threadID := "t." + phone
+	var thread *gvproto.Thread
+	resp, err := gc.Client.GetThread(ctx, threadID, 1, "")
+	newThread := libgv.IsNotFoundError(err)
+	if newThread {
+		// There's no create call: the first message creates the thread (see isNewThread).
+		thread = &gvproto.Thread{
+			ID:           threadID,
+			IsText:       true,
+			PhoneNumbers: []string{phone},
+			Contacts:     []*gvproto.Contact{contact},
+		}
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to get thread: %w", err)
+	} else {
+		thread = resp.Thread
+	}
+	chatInfo := gc.wrapChatInfo(ctx, thread)
+	chatInfo.CanBackfill = !newThread
+	return &bridgev2.ResolveIdentifierResponse{
 		Ghost:    ghost,
 		UserID:   userID,
-		UserInfo: userInfo,
-	}
-	if createChat {
-		// Google Voice doesn't have a separate create step: 1:1 SMS threads are always
-		// identified by the other party's number, and the thread is created by the first message.
-		threadID := "t." + phone
-		chatInfo := gc.wrapChatInfo(ctx, &gvproto.Thread{ID: threadID, IsText: true, PhoneNumbers: []string{phone}})
-		chatInfo.Members.MemberMap[userID] = bridgev2.ChatMember{
-			EventSender: bridgev2.EventSender{Sender: userID},
-			UserInfo:    userInfo,
-		}
-		resp.Chat = &bridgev2.CreateChatResponse{
-			PortalKey:  gc.makePortalKey(threadID),
+		UserInfo: chatInfo.Members.MemberMap[userID].UserInfo,
+		Chat: &bridgev2.CreateChatResponse{
+			PortalKey:  gc.makePortalKey(thread.ID),
 			PortalInfo: chatInfo,
-		}
-	}
-	return resp, nil
+		},
+	}, nil
 }

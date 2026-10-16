@@ -45,9 +45,16 @@ func (gc *GVClient) HandleMatrixMessage(ctx context.Context, msg *bridgev2.Matri
 			ID: libgv.GenerateTransactionID(),
 		},
 	}
+	recipients := msg.Portal.Metadata.(*PortalMetadata).Participants
+	if newThread, err := gc.isNewThread(ctx, msg.Portal); err != nil {
+		return nil, fmt.Errorf("failed to check if thread exists: %w", err)
+	} else if newThread {
+		// Like the web app, address the first message of a new thread to the recipients, which creates the thread.
+		req.ThreadID = ""
+		req.Recipients = recipients
+	}
 	var electronStatus string
 	if rs := gc.requestSignature.Load(); rs != nil {
-		recipients := msg.Portal.Metadata.(*PortalMetadata).Participants
 		td, err := (*rs)(ctx, req.ThreadID, recipients, req.TransactionID.ID)
 		if err != nil {
 			zerolog.Ctx(ctx).Err(err).Msg("Failed to generate signature")
@@ -123,6 +130,18 @@ func (gc *GVClient) HandleMatrixMessage(ctx context.Context, msg *bridgev2.Matri
 			Timestamp: time.UnixMilli(resp.TimestampMS),
 		},
 	}, nil
+}
+
+// isNewThread returns true for chats started from Matrix that don't have a Google Voice thread yet.
+func (gc *GVClient) isNewThread(ctx context.Context, portal *bridgev2.Portal) (bool, error) {
+	if first, err := gc.Main.Bridge.DB.Message.GetFirstPortalMessage(ctx, portal.PortalKey); err != nil || first != nil {
+		return false, err
+	}
+	_, err := gc.Client.GetThread(ctx, string(portal.ID), 1, "")
+	if libgv.IsNotFoundError(err) {
+		return true, nil
+	}
+	return false, err
 }
 
 func (gc *GVClient) getMergedThreads(ctx context.Context, portal *bridgev2.Portal, start, end time.Time) (threadIDs []string, hasOwnMessages bool, err error) {
