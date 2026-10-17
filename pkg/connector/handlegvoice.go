@@ -263,7 +263,6 @@ func (gc *GVClient) syncDMBlock(ctx context.Context, portalKey networkid.PortalK
 		EventMeta: simplevent.EventMeta{
 			Type:      bridgev2.RemoteEventChatInfoChange,
 			PortalKey: portalKey,
-			Timestamp: time.Now(),
 		},
 		ChatInfoChange: &bridgev2.ChatInfoChange{
 			ChatInfo: &bridgev2.ChatInfo{UserBlocked: &blocked},
