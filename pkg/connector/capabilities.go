@@ -20,6 +20,7 @@ import (
 	"context"
 
 	"maunium.net/go/mautrix/bridgev2"
+	"maunium.net/go/mautrix/bridgev2/database"
 	"maunium.net/go/mautrix/event"
 )
 
@@ -39,11 +40,11 @@ func (gv *GVConnector) GetCapabilities() *bridgev2.NetworkGeneralCapabilities {
 }
 
 func (gv *GVConnector) GetBridgeInfoVersion() (info, caps int) {
-	return 1, 3
+	return 1, 4
 }
 
 var roomCaps = &event.RoomFeatures{
-	ID:            "fi.mau.gvoice.capabilities.2026_06_04",
+	ID:            "fi.mau.gvoice.capabilities.2026_10_16",
 	MaxTextLength: 160,
 	File: map[event.MessageType]*event.FileFeatures{
 		event.MsgImage: {
@@ -70,6 +71,17 @@ var roomCaps = &event.RoomFeatures{
 	DeleteChat: true,
 }
 
+var dmCaps *event.RoomFeatures
+
+func init() {
+	dmCaps = roomCaps.Clone()
+	dmCaps.ID += "+dm"
+	dmCaps.BlockUser = true
+}
+
 func (gc *GVClient) GetCapabilities(ctx context.Context, portal *bridgev2.Portal) *event.RoomFeatures {
+	if portal.RoomType == database.RoomTypeDM {
+		return dmCaps
+	}
 	return roomCaps
 }

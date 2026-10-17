@@ -158,6 +158,9 @@ threadLoop:
 		lastMessageTS := time.UnixMilli(thread.Messages[0].Timestamp)
 		portalKey := gc.makeThreadPortalKey(thread)
 		prevMsg, ok := gc.lastEvents[thread.ID]
+		if ok {
+			gc.syncDMBlock(ctx, portalKey, thread)
+		}
 		if !ok && string(portalKey.ID) != thread.ID && gc.isMessageBridged(ctx, thread.Messages[0]) {
 			// Call threads bridged before they were merged into the SMS portal stay where they are
 			gc.lastEvents[thread.ID] = lastMessageTS
@@ -242,6 +245,29 @@ threadLoop:
 		gc.lastEvents[thread.ID] = lastMessageTS
 	}
 	return errs
+}
+
+func (gc *GVClient) syncDMBlock(ctx context.Context, portalKey networkid.PortalKey, thread *gvproto.Thread) {
+	if len(thread.PhoneNumbers) != 1 {
+		return
+	}
+	blocked := isDMBlocked(thread)
+	portal, err := gc.Main.Bridge.GetExistingPortalByKey(ctx, portalKey)
+	if err != nil {
+		zerolog.Ctx(ctx).Err(err).Str("thread_id", thread.ID).Msg("Failed to get portal to sync block status")
+		return
+	} else if portal == nil || portal.MXID == "" || portal.UserBlocked == blocked {
+		return
+	}
+	gc.Main.Bridge.QueueRemoteEvent(gc.UserLogin, &simplevent.ChatInfoChange{
+		EventMeta: simplevent.EventMeta{
+			Type:      bridgev2.RemoteEventChatInfoChange,
+			PortalKey: portalKey,
+		},
+		ChatInfoChange: &bridgev2.ChatInfoChange{
+			ChatInfo: &bridgev2.ChatInfo{UserBlocked: &blocked},
+		},
+	})
 }
 
 func (gc *GVClient) syncOlderThreads(ctx context.Context, firstPage *gvproto.RespListThreads) {
