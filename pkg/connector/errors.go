@@ -18,8 +18,10 @@ package connector
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
+	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/bridgev2"
 	"maunium.net/go/mautrix/event"
 
@@ -75,4 +77,22 @@ func wrapSendError(err error) error {
 			WithErrorReason(event.MessageStatusNetworkError).
 			WithSendNotice(true)
 	}
+}
+
+// wrapRespError turns an error from a Google Voice request made during login or provisioning into an HTTP error,
+// keeping the original error in the chain. Clients retry 429 and 502-504 automatically, so those aren't used.
+func wrapRespError(err error) error {
+	var mapped bridgev2.RespError
+	var respErr *libgv.ResponseError
+	switch {
+	case libgv.IsAuthError(err):
+		mapped = bridgev2.RespError(mautrix.MForbidden.WithMessage("Google rejected the cookies. Log in again with fresh cookies from a logged-in voice.google.com tab."))
+	case isRateLimitError(err):
+		mapped = bridgev2.RespError(mautrix.MLimitExceeded.WithMessage("Google Voice is rate limiting requests. Please wait a few minutes and try again.").WithStatus(http.StatusBadRequest))
+	case errors.As(err, &respErr):
+		mapped = bridgev2.RespError(mautrix.MUnknown.WithMessage("Google Voice returned an error"))
+	default:
+		mapped = bridgev2.RespError(mautrix.MUnknown.WithMessage("Failed to reach Google Voice"))
+	}
+	return fmt.Errorf("%w: %w", mapped, err)
 }
