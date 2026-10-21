@@ -38,7 +38,20 @@ const (
 	GVDisconnected   status.BridgeStateErrorCode = "gv-transient-disconnect"
 	GVRealtimeError  status.BridgeStateErrorCode = "gv-realtime-error"
 	GVTooManyRetries status.BridgeStateErrorCode = "gv-too-many-retries"
+	GVRateLimited    status.BridgeStateErrorCode = "gv-rate-limited"
 )
+
+func init() {
+	status.BridgeStateHumanErrors.Update(status.BridgeStateErrorMap{
+		GVNotLoggedIn:    "You're not logged into Google Voice",
+		GVBadCredentials: "Your Google Voice session expired, please log in again",
+		GVConnectError:   "Failed to connect to Google Voice, retrying",
+		GVDisconnected:   "Disconnected from Google Voice, reconnecting",
+		GVRealtimeError:  "Error in the Google Voice realtime connection",
+		GVTooManyRetries: "Failed to reconnect to Google Voice",
+		GVRateLimited:    "Google Voice is rate limiting connections, retrying",
+	})
+}
 
 var RetryTransientErrorTimeout = 1 * time.Minute
 
@@ -48,7 +61,7 @@ type GVClient struct {
 	Main      *GVConnector
 	UserLogin *bridgev2.UserLogin
 	Client    *libgv.Client
-	LoggedIn  bool
+	LoggedIn  atomic.Bool
 
 	lastEvents           map[string]time.Time
 	wakeupMessageFetcher chan struct{}
@@ -71,13 +84,13 @@ func (gv *GVConnector) LoadUserLogin(ctx context.Context, login *bridgev2.UserLo
 		Main:      gv,
 		Client:    lgvClient,
 		UserLogin: login,
-		LoggedIn:  len(cookies) > 0,
 
 		lastEvents:           make(map[string]time.Time),
 		wakeupMessageFetcher: make(chan struct{}),
 		fetchEventsLimiter:   rate.NewLimiter(rate.Every(MinRefreshInterval), MinRefreshBurstCount),
 		contactCache:         make(map[string]*ProcessedContact),
 	}
+	gvClient.LoggedIn.Store(len(cookies) > 0)
 	lgvClient.EventHandler = gvClient.handleRealtimeEvent
 	login.Client = gvClient
 	return nil
@@ -91,24 +104,66 @@ func (gc *GVClient) Connect(ctx context.Context) {
 	_, err := gc.Client.GetAccount(ctx)
 	if err != nil {
 		zerolog.Ctx(ctx).Err(err).Msg("Failed to get account on connect")
-		if ctx.Err() == nil {
-			if libgv.IsAuthError(err) {
-				gc.UserLogin.BridgeState.Send(status.BridgeState{
-					StateEvent: status.StateBadCredentials,
-					Error:      GVBadCredentials,
-					Info:       map[string]any{"go_error": err.Error()},
-				})
-			} else {
-				gc.UserLogin.BridgeState.Send(status.BridgeState{
-					StateEvent: status.StateUnknownError,
-					Error:      GVConnectError,
-					Info:       map[string]any{"go_error": err.Error()},
-				})
-			}
+		if ctx.Err() == nil && gc.handleConnectError(err) {
+			retryCtx, cancel := context.WithCancel(gc.Main.Bridge.BackgroundCtx)
+			gc.stopRealtime.Store(&cancel)
+			go gc.retryConnect(retryCtx, cancel)
 		}
 		return
 	}
 	go gc.connectRealtime()
+}
+
+// handleConnectError sends the bridge state for a failed account check and returns whether to retry.
+func (gc *GVClient) handleConnectError(err error) bool {
+	if libgv.IsAuthError(err) {
+		gc.sendBadCredentials(err)
+		return false
+	}
+	code := GVConnectError
+	if isRateLimitError(err) {
+		code = GVRateLimited
+	}
+	gc.UserLogin.BridgeState.Send(status.BridgeState{
+		StateEvent: status.StateTransientDisconnect,
+		Error:      code,
+		Info:       map[string]any{"go_error": err.Error()},
+	})
+	return true
+}
+
+func (gc *GVClient) retryConnect(ctx context.Context, cancel context.CancelFunc) {
+	defer cancel()
+	log := gc.UserLogin.Log.With().Str("action", "retry connect").Logger()
+	ctx = log.WithContext(ctx)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(RetryTransientErrorTimeout):
+		}
+		_, err := gc.Client.GetAccount(ctx)
+		if ctx.Err() != nil {
+			return
+		} else if err == nil {
+			gc.connectRealtime()
+			return
+		}
+		log.Err(err).Msg("Failed to get account on connect retry")
+		if !gc.handleConnectError(err) {
+			return
+		}
+	}
+}
+
+func (gc *GVClient) sendBadCredentials(err error) {
+	gc.LoggedIn.Store(false)
+	gc.UserLogin.BridgeState.Send(status.BridgeState{
+		StateEvent: status.StateBadCredentials,
+		Error:      GVBadCredentials,
+		UserAction: status.UserActionRelogin,
+		Info:       map[string]any{"go_error": err.Error()},
+	})
 }
 
 func (gc *GVClient) connectRealtime() {
@@ -127,16 +182,17 @@ func (gc *GVClient) connectRealtime() {
 		err := gc.Client.RunRealtimeChannel(ctx)
 		if errors.Is(err, context.Canceled) || ctx.Err() != nil {
 			log.Debug().Err(err).Msg("Realtime channel disconnected with context canceled")
+			return
 		} else if err == nil {
 			log.Warn().Msg("Realtime channel disconnected without error")
 			transientRetries = 0
+			gc.UserLogin.BridgeState.Send(status.BridgeState{
+				StateEvent: status.StateTransientDisconnect,
+				Error:      GVDisconnected,
+			})
 		} else if libgv.IsAuthError(err) {
 			log.Err(err).Msg("Realtime channel disconnected with auth error")
-			gc.UserLogin.BridgeState.Send(status.BridgeState{
-				StateEvent: status.StateBadCredentials,
-				Error:      GVBadCredentials,
-				Info:       map[string]any{"go_error": err.Error()},
-			})
+			gc.sendBadCredentials(err)
 			return
 		} else if errors.Is(err, libgv.ErrTooManyUnknownSID) {
 			log.Err(err).Msg("Realtime channel failed with too many unknown SID errors")
@@ -163,14 +219,13 @@ func (gc *GVClient) connectRealtime() {
 				Error:      GVDisconnected,
 				Info:       map[string]any{"go_error": err.Error()},
 			})
-			select {
-			case <-ctx.Done():
-			case <-time.After(RetryTransientErrorTimeout):
-				log.Info().Int("retry", transientRetries).Msg("Retrying connection after transient error")
-				continue
-			}
 		}
-		return
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(RetryTransientErrorTimeout):
+			log.Info().Int("retry", transientRetries).Msg("Retrying connection after transient error")
+		}
 	}
 }
 
@@ -203,7 +258,7 @@ func (gc *GVClient) Disconnect() {
 }
 
 func (gc *GVClient) IsLoggedIn() bool {
-	return gc.LoggedIn
+	return gc.LoggedIn.Load()
 }
 
 func (gc *GVClient) LogoutRemote(ctx context.Context) {

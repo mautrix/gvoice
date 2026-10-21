@@ -129,6 +129,12 @@ func (gc *GVClient) fetchNewMessages(ctx context.Context, targetThreadID string)
 	zerolog.Ctx(ctx).Debug().Msg("Fetching new messages")
 	resp, err := gc.Client.ListThreads(ctx, gvproto.ThreadFolder_ALL_THREADS, "", "")
 	if err != nil {
+		if libgv.IsAuthError(err) && ctx.Err() == nil {
+			gc.sendBadCredentials(err)
+			if stop := gc.stopRealtime.Load(); stop != nil {
+				(*stop)()
+			}
+		}
 		return fmt.Errorf("failed to list threads: %w", err)
 	}
 	var errs []error
