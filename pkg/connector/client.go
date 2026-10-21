@@ -263,4 +263,5 @@ func (gc *GVClient) IsLoggedIn() bool {
 
 func (gc *GVClient) LogoutRemote(ctx context.Context) {
 	// TODO is logging out possible?
+	gc.Disconnect()
 }
