@@ -49,7 +49,7 @@ func (gv *GVConnector) GetLoginFlows() []bridgev2.LoginFlow {
 
 func (gv *GVConnector) CreateLogin(ctx context.Context, user *bridgev2.User, flowID string) (bridgev2.LoginProcess, error) {
 	if flowID != LoginFlowIDCookies {
-		return nil, fmt.Errorf("unknown login flow ID %q", flowID)
+		return nil, bridgev2.ErrInvalidLoginFlowID
 	}
 	return &GVLogin{User: user, Main: gv}, nil
 }
@@ -110,7 +110,7 @@ func (gl *GVLogin) SubmitCookies(ctx context.Context, cookies map[string]string)
 	acc, err := cli.GetAccount(ctx)
 	if err != nil {
 		zerolog.Ctx(ctx).Err(err).Msg("Failed to get account")
-		return nil, err
+		return nil, wrapRespError(err)
 	}
 	// TODO is google account email available somehow?
 	loginID := networkid.UserLoginID(fmt.Sprintf("%s|%s", gl.User.MXID, acc.Account.PrimaryDestinationID))

@@ -101,7 +101,7 @@ func (gc *GVClient) ResolveIdentifier(ctx context.Context, identifier string, cr
 			Contacts:     []*gvproto.Contact{contact},
 		}
 	} else if err != nil {
-		return nil, fmt.Errorf("failed to get thread: %w", err)
+		return nil, wrapRespError(fmt.Errorf("failed to get thread: %w", err))
 	} else {
 		thread = resp.Thread
 	}

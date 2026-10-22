@@ -109,21 +109,10 @@ func (gc *GVClient) HandleMatrixMessage(ctx context.Context, msg *bridgev2.Matri
 	}
 	resp, err := gc.Client.SendMessage(ctx, req)
 	if err != nil {
-		var respErr *libgv.ResponseError
-		if errors.As(err, &respErr) {
-			var status int
-			if respErr.Resp != nil {
-				status = respErr.Resp.StatusCode
-			}
-			if status == 429 {
-				err = fmt.Errorf("%w (electron status: %s)", err, electronStatus)
-			}
-			err = bridgev2.WrapErrorInStatus(err).
-				WithIsCertain(status >= 400 && status < 500).
-				WithSendNotice(true).
-				WithErrorAsMessage()
+		if isRateLimitError(err) {
+			err = fmt.Errorf("%w (electron status: %s)", err, electronStatus)
 		}
-		return nil, err
+		return nil, wrapSendError(err)
 	}
 	return &bridgev2.MatrixMessageResponse{
 		DB: &database.Message{
@@ -142,7 +131,7 @@ func (gc *GVClient) isNewThread(ctx context.Context, portal *bridgev2.Portal) (b
 	if libgv.IsNotFoundError(err) {
 		return true, nil
 	}
-	return false, err
+	return false, wrapSendError(err)
 }
 
 func (gc *GVClient) getMergedThreads(ctx context.Context, portal *bridgev2.Portal, start, end time.Time) (threadIDs []string, hasOwnMessages bool, err error) {
@@ -206,27 +195,37 @@ func (gc *GVClient) HandleMatrixDeleteChat(ctx context.Context, chat *bridgev2.M
 	}
 	if hasOwnMessages || len(threadIDs) == 0 {
 		_, err = gc.Client.DeleteThread(ctx, string(chat.Portal.ID))
-		return err
+		return wrapSendError(err)
 	}
 	return nil
 }
 
 func (gc *GVClient) HandleMatrixBlockUser(ctx context.Context, msg *bridgev2.MatrixBlockUser) error {
 	if msg.Content.ReportSpam && !msg.Content.Block {
-		return errors.New("spam reporting requires blocking the user")
+		return bridgev2.WrapErrorInStatus(errors.New("spam reporting requires blocking the user")).
+			WithMessage("Google Voice can only report spam when blocking the user").
+			WithErrorReason(event.MessageStatusUnsupported).
+			WithStatus(event.MessageStatusFail).
+			WithIsCertain(true).
+			WithSendNotice(true)
 	}
 	err := gc.setThreadBlocked(ctx, string(msg.Portal.ID), msg.Content.Block, msg.Content.ReportSpam)
 	if !libgv.IsNotFoundError(err) {
-		return err
+		return wrapSendError(err)
 	}
 	// Blocks apply to the number, so a merged call thread works when there's no SMS thread.
 	threadIDs, _, dbErr := gc.getMergedThreads(ctx, msg.Portal, time.Unix(0, 0), time.Now().Add(24*time.Hour))
 	if dbErr != nil {
 		return fmt.Errorf("failed to get merged threads: %w", dbErr)
 	} else if len(threadIDs) == 0 {
-		return fmt.Errorf("conversation doesn't exist on Google Voice yet: %w", err)
+		return bridgev2.WrapErrorInStatus(fmt.Errorf("conversation doesn't exist on Google Voice yet: %w", err)).
+			WithMessage("this conversation doesn't exist on Google Voice yet").
+			WithErrorReason(event.MessageStatusUnsupported).
+			WithStatus(event.MessageStatusFail).
+			WithIsCertain(true).
+			WithSendNotice(true)
 	}
-	return gc.setThreadBlocked(ctx, threadIDs[0], msg.Content.Block, msg.Content.ReportSpam)
+	return wrapSendError(gc.setThreadBlocked(ctx, threadIDs[0], msg.Content.Block, msg.Content.ReportSpam))
 }
 
 func (gc *GVClient) setThreadBlocked(ctx context.Context, threadID string, blocked, spam bool) error {
