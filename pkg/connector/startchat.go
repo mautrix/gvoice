@@ -124,16 +124,22 @@ const newGroupPrefix = "new."
 
 func (gc *GVClient) CreateGroup(ctx context.Context, params *bridgev2.GroupCreateParams) (*bridgev2.CreateChatResponse, error) {
 	phones := make([]string, len(params.Participants))
-	contacts := make([]*gvproto.Contact, len(params.Participants))
 	for i, userID := range params.Participants {
 		prefix, phone, _ := strings.Cut(string(userID), ".")
 		if prefix != gc.UserLogin.Metadata.(*UserLoginMetadata).Prefix {
 			return nil, bridgev2.WrapRespErrManual(fmt.Errorf("user ID %s is not on this account", userID), mautrix.MInvalidParam.ErrCode, http.StatusBadRequest)
 		}
 		phones[i] = phone
-		contacts[i] = &gvproto.Contact{PhoneNumber: phone, Name: phone}
 	}
 	slices.Sort(phones)
+	phones = slices.Compact(phones)
+	if len(phones) < 2 {
+		return nil, bridgev2.WrapRespErrManual(errors.New("group texts need at least two other people"), mautrix.MInvalidParam.ErrCode, http.StatusBadRequest)
+	}
+	contacts := make([]*gvproto.Contact, len(phones))
+	for i, phone := range phones {
+		contacts[i] = &gvproto.Contact{PhoneNumber: phone, Name: phone}
+	}
 	thread := &gvproto.Thread{
 		ID:           newGroupPrefix + strings.Join(phones, ","),
 		IsText:       true,
