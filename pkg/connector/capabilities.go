@@ -32,6 +32,12 @@ var generalCaps = &bridgev2.NetworkGeneralCapabilities{
 			CreateDM: true,
 			AnyPhone: true,
 		},
+		GroupCreation: map[string]bridgev2.GroupTypeCapabilities{
+			"group": {
+				TypeDescription: "group text",
+				Participants:    bridgev2.GroupFieldCapability{Allowed: true, Required: true, MinLength: 2, MaxLength: 7},
+			},
+		},
 	},
 }
 

@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -114,6 +115,14 @@ func (gc *GVClient) HandleMatrixMessage(ctx context.Context, msg *bridgev2.Matri
 		}
 		return nil, wrapSendError(err)
 	}
+	if strings.HasPrefix(string(msg.Portal.ID), newGroupPrefix) && resp.ThreadID != "" {
+		result, _, err := gc.Main.Bridge.ReIDPortal(ctx, msg.Portal.PortalKey, gc.makePortalKey(resp.ThreadID))
+		if err != nil {
+			zerolog.Ctx(ctx).Err(err).Str("thread_id", resp.ThreadID).Msg("Failed to re-ID new group portal")
+		} else {
+			zerolog.Ctx(ctx).Debug().Str("thread_id", resp.ThreadID).Stringer("result", result).Msg("Re-IDed new group portal")
+		}
+	}
 	return &bridgev2.MatrixMessageResponse{
 		DB: &database.Message{
 			ID:        networkid.MessageID(resp.ThreadItemID),
@@ -124,6 +133,9 @@ func (gc *GVClient) HandleMatrixMessage(ctx context.Context, msg *bridgev2.Matri
 
 // isNewThread returns true for chats started from Matrix that don't have a Google Voice thread yet.
 func (gc *GVClient) isNewThread(ctx context.Context, portal *bridgev2.Portal) (bool, error) {
+	if strings.HasPrefix(string(portal.ID), newGroupPrefix) {
+		return true, nil
+	}
 	if first, err := gc.Main.Bridge.DB.Message.GetFirstPortalMessage(ctx, portal.PortalKey); err != nil || first != nil {
 		return false, err
 	}
