@@ -115,22 +115,17 @@ func (gc *GVClient) HandleMatrixMessage(ctx context.Context, msg *bridgev2.Matri
 		}
 		return nil, wrapSendError(err)
 	}
-	var room networkid.PortalKey
 	if strings.HasPrefix(string(msg.Portal.ID), newGroupPrefix) && resp.ThreadID != "" {
-		result, portal, err := gc.Main.Bridge.ReIDPortal(ctx, msg.Portal.PortalKey, gc.makePortalKey(resp.ThreadID))
+		result, _, err := gc.Main.Bridge.ReIDPortal(ctx, msg.Portal.PortalKey, gc.makePortalKey(resp.ThreadID))
 		if err != nil {
 			zerolog.Ctx(ctx).Err(err).Str("thread_id", resp.ThreadID).Msg("Failed to re-ID new group portal")
 		} else {
 			zerolog.Ctx(ctx).Debug().Str("thread_id", resp.ThreadID).Stringer("result", result).Msg("Re-IDed new group portal")
-			if portal != nil {
-				room = portal.PortalKey
-			}
 		}
 	}
 	return &bridgev2.MatrixMessageResponse{
 		DB: &database.Message{
 			ID:        networkid.MessageID(resp.ThreadItemID),
-			Room:      room,
 			Timestamp: time.UnixMilli(resp.TimestampMS),
 		},
 	}, nil
