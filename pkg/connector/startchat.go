@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/rs/zerolog"
@@ -18,6 +19,7 @@ import (
 
 var (
 	_ bridgev2.IdentifierResolvingNetworkAPI = (*GVClient)(nil)
+	_ bridgev2.GroupCreatingNetworkAPI       = (*GVClient)(nil)
 	_ bridgev2.IdentifierValidatingNetwork   = (*GVConnector)(nil)
 )
 
@@ -115,5 +117,59 @@ func (gc *GVClient) ResolveIdentifier(ctx context.Context, identifier string, cr
 			PortalKey:  gc.makePortalKey(thread.ID),
 			PortalInfo: chatInfo,
 		},
+	}, nil
+}
+
+const newGroupPrefix = "new."
+
+func (gc *GVClient) CreateGroup(ctx context.Context, params *bridgev2.GroupCreateParams) (*bridgev2.CreateChatResponse, error) {
+	phones := make([]string, len(params.Participants))
+	for i, userID := range params.Participants {
+		prefix, phone, _ := strings.Cut(string(userID), ".")
+		if prefix != gc.UserLogin.Metadata.(*UserLoginMetadata).Prefix {
+			return nil, bridgev2.RespError(mautrix.MInvalidParam.WithMessage("user ID %s is not on this account", userID))
+		}
+		phones[i] = phone
+	}
+	slices.Sort(phones)
+	phones = slices.Compact(phones)
+	if len(phones) < 2 {
+		return nil, bridgev2.RespError(mautrix.MInvalidParam.WithMessage("group texts need at least two other people"))
+	}
+	contacts := make([]*gvproto.Contact, len(phones))
+	for i, phone := range phones {
+		contacts[i] = &gvproto.Contact{PhoneNumber: phone, Name: phone}
+	}
+	thread := &gvproto.Thread{
+		ID:           newGroupPrefix + strings.Join(phones, ","),
+		IsText:       true,
+		PhoneNumbers: phones,
+		Contacts:     contacts,
+	}
+	portalKey := gc.makePortalKey(thread.ID)
+	chatInfo := gc.wrapChatInfo(ctx, thread)
+	chatInfo.CanBackfill = false
+	var portal *bridgev2.Portal
+	if params.RoomID != "" {
+		var err error
+		portal, err = gc.Main.Bridge.GetPortalByKey(ctx, portalKey)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get portal by key: %w", err)
+		}
+		err = portal.UpdateMatrixRoomID(ctx, params.RoomID, bridgev2.UpdateMatrixRoomIDParams{
+			OverwriteOldPortal: true,
+			TombstoneOldRoom:   true,
+			DeleteOldRoom:      true,
+			ChatInfo:           chatInfo,
+			ChatInfoSource:     gc.UserLogin,
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &bridgev2.CreateChatResponse{
+		PortalKey:  portalKey,
+		PortalInfo: chatInfo,
+		Portal:     portal,
 	}, nil
 }
