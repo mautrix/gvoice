@@ -48,14 +48,18 @@ func init() {
 		GVConnectError:   "Failed to connect to Google Voice, retrying",
 		GVDisconnected:   "Disconnected from Google Voice, reconnecting",
 		GVRealtimeError:  "Error in the Google Voice realtime connection",
-		GVTooManyRetries: "Failed to reconnect to Google Voice",
+		GVTooManyRetries: "Repeatedly failed to reconnect to Google Voice, retrying",
 		GVRateLimited:    "Google Voice is rate limiting connections, retrying",
 	})
 }
 
 var RetryTransientErrorTimeout = 1 * time.Minute
+var RetryTransientErrorLongTimeout = 10 * time.Minute
 
-const MaxTransientRetries = 5
+const (
+	MaxTransientRetries     = 5
+	HealthyRealtimeDuration = 5 * time.Minute
+)
 
 type GVClient struct {
 	Main      *GVConnector
@@ -179,7 +183,12 @@ func (gc *GVClient) connectRealtime() {
 	ctx = log.WithContext(ctx)
 	transientRetries := 0
 	for {
+		startedAt := time.Now()
 		err := gc.Client.RunRealtimeChannel(ctx)
+		if time.Since(startedAt) > HealthyRealtimeDuration {
+			transientRetries = 0
+		}
+		retryIn := RetryTransientErrorTimeout
 		if errors.Is(err, context.Canceled) || ctx.Err() != nil {
 			log.Debug().Err(err).Msg("Realtime channel disconnected with context canceled")
 			return
@@ -194,36 +203,27 @@ func (gc *GVClient) connectRealtime() {
 			log.Err(err).Msg("Realtime channel disconnected with auth error")
 			gc.sendBadCredentials(err)
 			return
-		} else if errors.Is(err, libgv.ErrTooManyUnknownSID) {
-			log.Err(err).Msg("Realtime channel failed with too many unknown SID errors")
-			gc.UserLogin.BridgeState.Send(status.BridgeState{
-				StateEvent: status.StateUnknownError,
-				Error:      GVTooManyRetries,
-				Info:       map[string]any{"go_error": err.Error()},
-			})
-			return
 		} else {
 			transientRetries++
+			code := GVDisconnected
 			if transientRetries > MaxTransientRetries {
-				log.Err(err).Int("retries", transientRetries).Msg("Realtime channel exceeded max transient retries")
-				gc.UserLogin.BridgeState.Send(status.BridgeState{
-					StateEvent: status.StateUnknownError,
-					Error:      GVTooManyRetries,
-					Info:       map[string]any{"go_error": err.Error()},
-				})
-				return
+				code = GVTooManyRetries
+				retryIn = RetryTransientErrorLongTimeout
 			}
-			log.Err(err).Int("retry", transientRetries).Msg("Realtime channel disconnected with transient error")
+			log.Err(err).
+				Int("retry", transientRetries).
+				Stringer("retry_in", retryIn).
+				Msg("Realtime channel disconnected with transient error")
 			gc.UserLogin.BridgeState.Send(status.BridgeState{
 				StateEvent: status.StateTransientDisconnect,
-				Error:      GVDisconnected,
+				Error:      code,
 				Info:       map[string]any{"go_error": err.Error()},
 			})
 		}
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(RetryTransientErrorTimeout):
+		case <-time.After(retryIn):
 			log.Info().Int("retry", transientRetries).Msg("Retrying connection after transient error")
 		}
 	}
