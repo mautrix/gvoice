@@ -65,10 +65,16 @@ func wrapSendError(err error) error {
 			WithStatus(event.MessageStatusFail).
 			WithIsCertain(true).
 			WithSendNotice(true)
+	case code == http.StatusRequestTimeout:
+		return bridgev2.WrapErrorInStatus(err).
+			WithMessage("Google Voice timed out").
+			WithErrorReason(event.MessageStatusNetworkError).
+			WithSendNotice(true)
 	case code >= 400 && code < 500:
 		return bridgev2.WrapErrorInStatus(err).
 			WithMessage("Google Voice rejected the request").
 			WithErrorReason(event.MessageStatusNetworkError).
+			WithStatus(event.MessageStatusFail).
 			WithIsCertain(true).
 			WithSendNotice(true)
 	default:
