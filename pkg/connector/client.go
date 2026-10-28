@@ -164,8 +164,11 @@ func (gc *GVClient) checkSessionAfterAuthError(ctx context.Context) {
 	if !gc.LoggedIn.Load() {
 		return
 	}
-	_, err := gc.Client.GetAccount(ctx)
-	if libgv.IsAuthError(err) && ctx.Err() == nil {
+	callCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	_, err := gc.Client.GetAccount(callCtx)
+	// A relogin while GetAccount was running replaces the login's client, and the new one must keep its state.
+	if libgv.IsAuthError(err) && ctx.Err() == nil && gc.UserLogin.Client == gc {
 		gc.sendBadCredentials(err)
 	}
 }
