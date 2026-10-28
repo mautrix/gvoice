@@ -160,6 +160,18 @@ func (gc *GVClient) retryConnect(ctx context.Context, cancel context.CancelFunc)
 	}
 }
 
+func (gc *GVClient) checkSessionAfterAuthError() {
+	if !gc.LoggedIn.Load() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(gc.UserLogin.Log.WithContext(gc.Main.Bridge.BackgroundCtx), time.Minute)
+	defer cancel()
+	_, err := gc.Client.GetAccount(ctx)
+	if libgv.IsAuthError(err) {
+		gc.sendBadCredentials(err)
+	}
+}
+
 func (gc *GVClient) sendBadCredentials(err error) {
 	gc.LoggedIn.Store(false)
 	gc.UserLogin.BridgeState.Send(status.BridgeState{
