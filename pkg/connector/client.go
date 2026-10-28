@@ -160,14 +160,12 @@ func (gc *GVClient) retryConnect(ctx context.Context, cancel context.CancelFunc)
 	}
 }
 
-func (gc *GVClient) checkSessionAfterAuthError() {
+func (gc *GVClient) checkSessionAfterAuthError(ctx context.Context) {
 	if !gc.LoggedIn.Load() {
 		return
 	}
-	ctx, cancel := context.WithTimeout(gc.UserLogin.Log.WithContext(gc.Main.Bridge.BackgroundCtx), time.Minute)
-	defer cancel()
 	_, err := gc.Client.GetAccount(ctx)
-	if libgv.IsAuthError(err) {
+	if libgv.IsAuthError(err) && ctx.Err() == nil {
 		gc.sendBadCredentials(err)
 	}
 }
