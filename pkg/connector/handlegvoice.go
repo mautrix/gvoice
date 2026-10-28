@@ -131,9 +131,6 @@ func (gc *GVClient) fetchNewMessages(ctx context.Context, targetThreadID string)
 	if err != nil {
 		if libgv.IsAuthError(err) && ctx.Err() == nil {
 			gc.sendBadCredentials(err)
-			if stop := gc.stopRealtime.Load(); stop != nil {
-				(*stop)()
-			}
 		}
 		return fmt.Errorf("failed to list threads: %w", err)
 	}

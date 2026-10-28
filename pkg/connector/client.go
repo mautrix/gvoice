@@ -168,6 +168,9 @@ func (gc *GVClient) sendBadCredentials(err error) {
 		UserAction: status.UserActionRelogin,
 		Info:       map[string]any{"go_error": err.Error()},
 	})
+	if stop := gc.stopRealtime.Load(); stop != nil {
+		(*stop)()
+	}
 }
 
 func (gc *GVClient) connectRealtime() {

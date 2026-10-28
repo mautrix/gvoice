@@ -33,8 +33,9 @@ func isRateLimitError(err error) bool {
 	return errors.As(err, &respErr) && respErr.Resp != nil && respErr.Resp.StatusCode == http.StatusTooManyRequests
 }
 
-// wrapSendError turns an error from a Google Voice request made in a Matrix event handler into a message status.
-func wrapSendError(err error) error {
+// wrapSendError turns an error from a Google Voice request made in a Matrix event handler into a message status,
+// and sends a bad credentials state if Google rejected the session.
+func (gc *GVClient) wrapSendError(err error) error {
 	if err == nil || errors.As(err, &bridgev2.MessageStatus{}) {
 		return err
 	}
@@ -53,6 +54,7 @@ func wrapSendError(err error) error {
 			WithIsCertain(true).
 			WithSendNotice(true)
 	case respErr.IsAuthError():
+		gc.sendBadCredentials(err)
 		return bridgev2.WrapErrorInStatus(err).
 			WithMessage("Google Voice rejected the request, you may need to log in again").
 			WithErrorReason(event.MessageStatusNetworkError).
