@@ -160,6 +160,19 @@ func (gc *GVClient) retryConnect(ctx context.Context, cancel context.CancelFunc)
 	}
 }
 
+func (gc *GVClient) checkSessionAfterAuthError(ctx context.Context) {
+	if !gc.LoggedIn.Load() {
+		return
+	}
+	callCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	_, err := gc.Client.GetAccount(callCtx)
+	// A relogin while GetAccount was running replaces the login's client, and the new one must keep its state.
+	if libgv.IsAuthError(err) && ctx.Err() == nil && gc.UserLogin.Client == gc {
+		gc.sendBadCredentials(err)
+	}
+}
+
 func (gc *GVClient) sendBadCredentials(err error) {
 	gc.LoggedIn.Store(false)
 	gc.UserLogin.BridgeState.Send(status.BridgeState{
@@ -168,6 +181,9 @@ func (gc *GVClient) sendBadCredentials(err error) {
 		UserAction: status.UserActionRelogin,
 		Info:       map[string]any{"go_error": err.Error()},
 	})
+	if stop := gc.stopRealtime.Load(); stop != nil {
+		(*stop)()
+	}
 }
 
 func (gc *GVClient) connectRealtime() {

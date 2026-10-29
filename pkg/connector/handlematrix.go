@@ -113,7 +113,7 @@ func (gc *GVClient) HandleMatrixMessage(ctx context.Context, msg *bridgev2.Matri
 		if isRateLimitError(err) {
 			err = fmt.Errorf("%w (electron status: %s)", err, electronStatus)
 		}
-		return nil, wrapSendError(err)
+		return nil, gc.wrapSendError(ctx, err)
 	}
 	if strings.HasPrefix(string(msg.Portal.ID), newGroupPrefix) && resp.ThreadID != "" {
 		result, _, err := gc.Main.Bridge.ReIDPortal(ctx, msg.Portal.PortalKey, gc.makePortalKey(resp.ThreadID))
@@ -143,7 +143,7 @@ func (gc *GVClient) isNewThread(ctx context.Context, portal *bridgev2.Portal) (b
 	if libgv.IsNotFoundError(err) {
 		return true, nil
 	}
-	return false, wrapSendError(err)
+	return false, gc.wrapSendError(ctx, err)
 }
 
 func (gc *GVClient) getMergedThreads(ctx context.Context, portal *bridgev2.Portal, start, end time.Time) (threadIDs []string, hasOwnMessages bool, err error) {
@@ -207,7 +207,7 @@ func (gc *GVClient) HandleMatrixDeleteChat(ctx context.Context, chat *bridgev2.M
 	}
 	if hasOwnMessages || len(threadIDs) == 0 {
 		_, err = gc.Client.DeleteThread(ctx, string(chat.Portal.ID))
-		return wrapSendError(err)
+		return gc.wrapSendError(ctx, err)
 	}
 	return nil
 }
@@ -223,7 +223,7 @@ func (gc *GVClient) HandleMatrixBlockUser(ctx context.Context, msg *bridgev2.Mat
 	}
 	err := gc.setThreadBlocked(ctx, string(msg.Portal.ID), msg.Content.Block, msg.Content.ReportSpam)
 	if !libgv.IsNotFoundError(err) {
-		return wrapSendError(err)
+		return gc.wrapSendError(ctx, err)
 	}
 	// Blocks apply to the number, so a merged call thread works when there's no SMS thread.
 	threadIDs, _, dbErr := gc.getMergedThreads(ctx, msg.Portal, time.Unix(0, 0), time.Now().Add(24*time.Hour))
@@ -237,7 +237,7 @@ func (gc *GVClient) HandleMatrixBlockUser(ctx context.Context, msg *bridgev2.Mat
 			WithIsCertain(true).
 			WithSendNotice(true)
 	}
-	return wrapSendError(gc.setThreadBlocked(ctx, threadIDs[0], msg.Content.Block, msg.Content.ReportSpam))
+	return gc.wrapSendError(ctx, gc.setThreadBlocked(ctx, threadIDs[0], msg.Content.Block, msg.Content.ReportSpam))
 }
 
 func (gc *GVClient) setThreadBlocked(ctx context.Context, threadID string, blocked, spam bool) error {
