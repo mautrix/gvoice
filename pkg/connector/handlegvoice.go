@@ -682,16 +682,18 @@ func convertGVVoicemailMessage(msg *gvproto.Message) *bridgev2.ConvertedMessage 
 	if msg.GetType() != gvproto.Message_VOICEMAIL || msg.GetCoarseType() != gvproto.Message_CALL_TYPE_VOICEMAIL {
 		return nil
 	}
-	transcript := buildGVVoicemailTranscript(msg.GetTranscript())
-	if transcript == "" {
-		return nil
+	body := "Voicemail"
+	if transcript := buildGVVoicemailTranscript(msg.GetTranscript()); transcript != "" {
+		body += ": " + transcript
+	} else if duration := formatGVCallDuration(msg.GetDurationSeconds()); duration != "" {
+		body += " • " + duration
 	}
 	return &bridgev2.ConvertedMessage{
 		Parts: []*bridgev2.ConvertedMessagePart{{
 			Type: event.EventMessage,
 			Content: &event.MessageEventContent{
 				MsgType: event.MsgText,
-				Body:    "Voicemail: " + transcript,
+				Body:    body,
 			},
 		}},
 	}
