@@ -438,17 +438,15 @@ func (gc *GVClient) getOldestOwnMessage(ctx context.Context, portal *bridgev2.Po
 	if oldest == nil || oldest.Metadata.(*MessageMetadata).ThreadID == "" {
 		return oldest, nil
 	}
-	messages, err := gc.Main.Bridge.DB.Message.GetMessagesBetweenTimeQuery(ctx, portal.PortalKey, time.Unix(0, 0), time.Now().Add(24*time.Hour))
-	if err != nil {
-		return nil, err
-	}
 	var own *database.Message
-	for _, msg := range messages {
-		if msg.Metadata.(*MessageMetadata).ThreadID == "" && (own == nil || msg.Timestamp.Before(own.Timestamp)) {
+	err := gc.Main.Bridge.DB.Message.IterPortalMessages(ctx, portal.PortalKey).Iter(func(msg *database.Message) (bool, error) {
+		if msg.Metadata.(*MessageMetadata).ThreadID == "" {
 			own = msg
+			return false, nil
 		}
-	}
-	return own, nil
+		return true, nil
+	})
+	return own, err
 }
 
 func (gc *GVClient) getMessageMeta(msg *gvproto.Message) (ts time.Time, txnID networkid.TransactionID, sender bridgev2.EventSender) {
