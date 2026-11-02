@@ -25,9 +25,10 @@ import (
 )
 
 type GVConnector struct {
-	Bridge *bridgev2.Bridge
-	Config Config
-	DB     *gvdb.GVDB
+	Bridge      *bridgev2.Bridge
+	Config      Config
+	DB          *gvdb.GVDB
+	DirectMedia bool
 }
 
 var _ bridgev2.NetworkConnector = (*GVConnector)(nil)
