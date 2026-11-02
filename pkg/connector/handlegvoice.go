@@ -455,7 +455,9 @@ func (gc *GVClient) getMessageMeta(msg *gvproto.Message) (ts time.Time, txnID ne
 	case gvproto.Message_SMS_OUT, gvproto.Message_OUTGOING_CALL, gvproto.Message_OUTGOING_CALL_CANCELLED:
 		sender.IsFromMe = true
 	default:
-		if senderNum := msg.GetMMS().GetSenderPhoneNumber(); senderNum != "" {
+		if msg.GetCoarseType() == gvproto.Message_CALL_TYPE_OUTGOING {
+			sender.IsFromMe = true
+		} else if senderNum := msg.GetMMS().GetSenderPhoneNumber(); senderNum != "" {
 			sender.Sender = gc.makeUserID(senderNum)
 		} else {
 			sender.Sender = gc.makeUserID(msg.GetContact().GetPhoneNumber())
@@ -626,12 +628,10 @@ func convertGVCallMessage(msg *gvproto.Message) *bridgev2.ConvertedMessage {
 		body = formatGVVoiceCallBody(msg.GetDurationSeconds())
 	case gvproto.Message_CALL_TYPE_OUTGOING:
 		switch msg.GetType() {
-		case gvproto.Message_OUTGOING_CALL:
-			body = formatGVVoiceCallBody(msg.GetDurationSeconds())
 		case gvproto.Message_OUTGOING_CALL_CANCELLED:
 			body = "Unanswered voice call"
 		default:
-			return nil
+			body = formatGVVoiceCallBody(msg.GetDurationSeconds())
 		}
 	default:
 		return nil
