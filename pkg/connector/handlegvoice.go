@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"encoding/json"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"net/http"
@@ -596,7 +596,9 @@ func (gc *GVClient) convertMedia(ctx context.Context, portal *bridgev2.Portal, i
 	}
 	fileName := prefix + exmime.ExtensionFromMimetype(mimeType)
 	if gc.Main.DirectMedia {
-		mediaID, _ := json.Marshal(directMediaID{LoginID: gc.UserLogin.ID, AttachmentID: att.ID})
+		mediaID := binary.AppendUvarint(nil, uint64(len(gc.UserLogin.ID)))
+		mediaID = append(mediaID, gc.UserLogin.ID...)
+		mediaID = append(mediaID, att.ID...)
 		into.URL, into.File, err = portal.Bridge.GenerateContentURI(ctx, portal.MXID, networkid.MediaID(mediaID))
 	} else {
 		into.URL, into.File, err = intent.UploadMedia(ctx, portal.MXID, data, fileName, mimeType)

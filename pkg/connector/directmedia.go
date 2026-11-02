@@ -2,7 +2,7 @@ package connector
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/binary"
 	"fmt"
 
 	"maunium.net/go/mautrix/bridgev2"
@@ -12,27 +12,24 @@ import (
 
 var _ bridgev2.DirectMediableNetwork = (*GVConnector)(nil)
 
-type directMediaID struct {
-	LoginID      networkid.UserLoginID `json:"login_id"`
-	AttachmentID string                `json:"attachment_id"`
-}
-
 func (gv *GVConnector) SetUseDirectMedia() {
 	gv.DirectMedia = true
 }
 
 func (gv *GVConnector) Download(ctx context.Context, mediaID networkid.MediaID, params map[string]string) (mediaproxy.GetMediaResponse, error) {
-	var info directMediaID
-	if err := json.Unmarshal([]byte(mediaID), &info); err != nil || info.LoginID == "" || info.AttachmentID == "" {
+	loginLen, n := binary.Uvarint(mediaID)
+	if n <= 0 || loginLen == 0 || loginLen >= uint64(len(mediaID)-n) {
 		return nil, fmt.Errorf("invalid direct media ID")
 	}
-	login, err := gv.Bridge.GetExistingUserLoginByID(ctx, info.LoginID)
+	loginID := networkid.UserLoginID(mediaID[n : n+int(loginLen)])
+	attachmentID := string(mediaID[n+int(loginLen):])
+	login, err := gv.Bridge.GetExistingUserLoginByID(ctx, loginID)
 	if err != nil {
 		return nil, err
 	} else if login == nil || !login.Client.IsLoggedIn() {
 		return nil, bridgev2.ErrNotLoggedIn
 	}
-	data, _, err := login.Client.(*GVClient).Client.DownloadAttachment(ctx, info.AttachmentID)
+	data, _, err := login.Client.(*GVClient).Client.DownloadAttachment(ctx, attachmentID)
 	if err != nil {
 		return nil, err
 	}
