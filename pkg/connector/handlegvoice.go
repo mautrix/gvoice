@@ -379,10 +379,13 @@ func (gc *GVClient) FetchMessages(ctx context.Context, params bridgev2.FetchMess
 	} else {
 		paginationToken := string(params.Cursor)
 		if paginationToken == "" {
-			if params.AnchorMessage == nil {
-				return nil, fmt.Errorf("can't backward backfill without either cursor or anchor message")
+			anchor, err := gc.getOldestOwnMessage(ctx, params.Portal, params.AnchorMessage)
+			if err != nil {
+				return nil, fmt.Errorf("failed to find backfill anchor: %w", err)
+			} else if anchor == nil {
+				return &bridgev2.FetchMessagesResponse{}, nil
 			}
-			paginationToken = strconv.FormatInt(params.AnchorMessage.Timestamp.UnixMilli(), 10)
+			paginationToken = strconv.FormatInt(anchor.Timestamp.UnixMilli(), 10)
 		}
 		for len(messagesToConvert) < params.Count && paginationToken != "" {
 			resp, err := gc.Client.GetThread(ctx, threadID, 100, paginationToken)
@@ -429,6 +432,21 @@ func (gc *GVClient) FetchMessages(ctx context.Context, params bridgev2.FetchMess
 		// Merged threads may contain calls that were already bridged into their own portal
 		AggressiveDeduplication: threadID != string(params.Portal.ID),
 	}, nil
+}
+
+func (gc *GVClient) getOldestOwnMessage(ctx context.Context, portal *bridgev2.Portal, oldest *database.Message) (*database.Message, error) {
+	if oldest == nil || oldest.Metadata.(*MessageMetadata).ThreadID == "" {
+		return oldest, nil
+	}
+	var own *database.Message
+	err := gc.Main.Bridge.DB.Message.IterPortalMessages(ctx, portal.PortalKey).Iter(func(msg *database.Message) (bool, error) {
+		if msg.Metadata.(*MessageMetadata).ThreadID == "" {
+			own = msg
+			return false, nil
+		}
+		return true, nil
+	})
+	return own, err
 }
 
 func (gc *GVClient) getMessageMeta(msg *gvproto.Message) (ts time.Time, txnID networkid.TransactionID, sender bridgev2.EventSender) {
