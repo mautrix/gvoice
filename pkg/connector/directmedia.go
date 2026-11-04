@@ -57,9 +57,7 @@ func (gv *GVConnector) Download(ctx context.Context, mediaID networkid.MediaID, 
 			switch respErr.Resp.StatusCode {
 			case http.StatusNotFound:
 				return nil, mautrix.MNotFound.WithMessage("Media not found on Google Voice")
-			case http.StatusUnauthorized:
-				return nil, mautrix.MForbidden.WithMessage("Google Voice denied access to the media").WithStatus(http.StatusUnauthorized)
-			case http.StatusForbidden:
+			case http.StatusUnauthorized, http.StatusForbidden:
 				return nil, mautrix.MForbidden.WithMessage("Google Voice denied access to the media")
 			}
 		}
