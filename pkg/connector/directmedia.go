@@ -3,11 +3,16 @@ package connector
 import (
 	"context"
 	"encoding/binary"
+	"errors"
 	"fmt"
+	"net/http"
 
+	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/bridgev2"
 	"maunium.net/go/mautrix/bridgev2/networkid"
 	"maunium.net/go/mautrix/mediaproxy"
+
+	"go.mau.fi/mautrix-gvoice/pkg/libgv"
 )
 
 var _ bridgev2.DirectMediableNetwork = (*GVConnector)(nil)
@@ -47,7 +52,18 @@ func (gv *GVConnector) Download(ctx context.Context, mediaID networkid.MediaID, 
 	}
 	data, mimeType, err := login.Client.(*GVClient).Client.DownloadAttachment(ctx, attachmentID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to download attachment: %w", err)
+		var respErr *libgv.ResponseError
+		if errors.As(err, &respErr) {
+			switch respErr.Resp.StatusCode {
+			case http.StatusNotFound:
+				return nil, mautrix.MNotFound.WithMessage("Media not found on Google Voice")
+			case http.StatusUnauthorized:
+				return nil, mautrix.MForbidden.WithMessage("Google Voice denied access to the media").WithStatus(http.StatusUnauthorized)
+			case http.StatusForbidden:
+				return nil, mautrix.MForbidden.WithMessage("Google Voice denied access to the media")
+			}
+		}
+		return nil, mautrix.MUnknown.WithMessage("Failed to download media from Google Voice").WithStatus(http.StatusBadGateway)
 	}
 	resp := mediaproxy.GetMediaResponseRawData(data)
 	if mimeType != "" {
