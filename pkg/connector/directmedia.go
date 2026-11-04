@@ -41,13 +41,17 @@ func (gv *GVConnector) Download(ctx context.Context, mediaID networkid.MediaID, 
 	}
 	login, err := gv.Bridge.GetExistingUserLoginByID(ctx, loginID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get user login: %w", err)
 	} else if login == nil || !login.Client.IsLoggedIn() {
 		return nil, bridgev2.ErrNotLoggedIn
 	}
-	data, _, err := login.Client.(*GVClient).Client.DownloadAttachment(ctx, attachmentID)
+	data, mimeType, err := login.Client.(*GVClient).Client.DownloadAttachment(ctx, attachmentID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to download attachment: %w", err)
 	}
-	return mediaproxy.GetMediaResponseRawData(data), nil
+	resp := mediaproxy.GetMediaResponseRawData(data)
+	if mimeType != "" {
+		resp.ContentType = mimeType
+	}
+	return resp, nil
 }
