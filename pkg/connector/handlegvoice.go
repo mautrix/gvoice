@@ -168,6 +168,9 @@ threadLoop:
 			// Call threads bridged before they were merged into the SMS portal stay where they are
 			gc.lastEvents[thread.ID] = lastMessageTS
 			continue
+		} else if !ok && string(portalKey.ID) != thread.ID && !lastMessageTS.After(gc.portalLatest[portalKey]) {
+			gc.lastEvents[thread.ID] = lastMessageTS
+			continue
 		} else if !ok {
 			config := gc.Main.Bridge.Config.Backfill
 			backfill := &gvBackfillData{
@@ -203,7 +206,7 @@ threadLoop:
 				continue
 			}
 			if result.Queued || backfill.completed {
-				gc.lastEvents[thread.ID] = lastMessageTS
+				gc.markThreadHandled(thread.ID, portalKey, lastMessageTS)
 				continue
 			}
 			if backfill.err != nil {
@@ -245,9 +248,16 @@ threadLoop:
 				continue threadLoop
 			}
 		}
-		gc.lastEvents[thread.ID] = lastMessageTS
+		gc.markThreadHandled(thread.ID, portalKey, lastMessageTS)
 	}
 	return errs
+}
+
+func (gc *GVClient) markThreadHandled(threadID string, portalKey networkid.PortalKey, lastMessageTS time.Time) {
+	gc.lastEvents[threadID] = lastMessageTS
+	if lastMessageTS.After(gc.portalLatest[portalKey]) {
+		gc.portalLatest[portalKey] = lastMessageTS
+	}
 }
 
 func (gc *GVClient) syncDMBlock(ctx context.Context, portalKey networkid.PortalKey, thread *gvproto.Thread) {

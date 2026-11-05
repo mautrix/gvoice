@@ -26,6 +26,7 @@ import (
 	"github.com/rs/zerolog"
 	"golang.org/x/time/rate"
 	"maunium.net/go/mautrix/bridgev2"
+	"maunium.net/go/mautrix/bridgev2/networkid"
 	"maunium.net/go/mautrix/bridgev2/status"
 
 	"go.mau.fi/mautrix-gvoice/pkg/libgv"
@@ -68,6 +69,7 @@ type GVClient struct {
 	LoggedIn  atomic.Bool
 
 	lastEvents           map[string]time.Time
+	portalLatest         map[networkid.PortalKey]time.Time
 	wakeupMessageFetcher chan struct{}
 	fetchEventsLimiter   *rate.Limiter
 	fetchEventsLock      sync.Mutex
@@ -90,6 +92,7 @@ func (gv *GVConnector) LoadUserLogin(ctx context.Context, login *bridgev2.UserLo
 		UserLogin: login,
 
 		lastEvents:           make(map[string]time.Time),
+		portalLatest:         make(map[networkid.PortalKey]time.Time),
 		wakeupMessageFetcher: make(chan struct{}),
 		fetchEventsLimiter:   rate.NewLimiter(rate.Every(MinRefreshInterval), MinRefreshBurstCount),
 		contactCache:         make(map[string]*ProcessedContact),
