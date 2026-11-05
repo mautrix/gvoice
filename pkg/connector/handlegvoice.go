@@ -552,11 +552,17 @@ func (gc *GVClient) convertMedia(ctx context.Context, portal *bridgev2.Portal, i
 		addMediaFailure(into, "File type not supported by Google Voice")
 		return
 	}
-	data, mimeType, err := gc.Client.DownloadAttachment(ctx, att.ID)
-	if err != nil {
-		zerolog.Ctx(ctx).Err(err).Msg("Failed to download attachment")
-		addMediaFailure(into, "Failed to download attachment")
-		return
+	var data []byte
+	var mimeType string
+	var err error
+	useDirectMedia := gc.Main.DirectMedia && att.MimeType != ""
+	if !useDirectMedia {
+		data, mimeType, err = gc.Client.DownloadAttachment(ctx, att.ID)
+		if err != nil {
+			zerolog.Ctx(ctx).Err(err).Msg("Failed to download attachment")
+			addMediaFailure(into, "Failed to download attachment")
+			return
+		}
 	}
 	if att.MimeType != "" {
 		mimeType = att.MimeType
@@ -587,7 +593,12 @@ func (gc *GVClient) convertMedia(ctx context.Context, portal *bridgev2.Portal, i
 		msgtype = event.MsgFile
 	}
 	fileName := prefix + exmime.ExtensionFromMimetype(mimeType)
-	into.URL, into.File, err = intent.UploadMedia(ctx, portal.MXID, data, fileName, mimeType)
+	if useDirectMedia {
+		mediaID := makeDirectMediaID(gc.UserLogin.ID, att.ID)
+		into.URL, into.File, err = portal.Bridge.GenerateContentURI(ctx, portal.MXID, mediaID)
+	} else {
+		into.URL, into.File, err = intent.UploadMedia(ctx, portal.MXID, data, fileName, mimeType)
+	}
 	if err != nil {
 		zerolog.Ctx(ctx).Err(err).Msg("Failed to reupload attachment")
 		addMediaFailure(into, "Failed to reupload attachment")
