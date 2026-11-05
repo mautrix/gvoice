@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"io"
 	"math/rand/v2"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -163,6 +164,11 @@ func (c *Client) RunRealtimeChannel(ctx context.Context) error {
 					break
 				} else if errors.Is(err, context.Canceled) {
 					return ctx.Err()
+				}
+				var netErr net.Error
+				if errors.As(err, &netErr) && netErr.Timeout() {
+					log.Debug().Err(err).Msg("Realtime long polling request timed out")
+					break
 				}
 				log.Err(err).Msg("Failed to read chunk")
 				break
