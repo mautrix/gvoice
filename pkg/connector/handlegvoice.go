@@ -569,7 +569,16 @@ func (gc *GVClient) convertMedia(ctx context.Context, portal *bridgev2.Portal, i
 	if !useDirectMedia {
 		data, mimeType, err = gc.Client.DownloadAttachment(ctx, att.ID)
 		if err != nil {
-			zerolog.Ctx(ctx).Err(err).Msg("Failed to download attachment")
+			sizes := make([]string, len(att.Metadata))
+			for i, meta := range att.Metadata {
+				sizes[i] = meta.Size.String()
+			}
+			zerolog.Ctx(ctx).Err(err).
+				Str("attachment_mime_type", att.MimeType).
+				Stringer("attachment_status", att.Status).
+				Stringer("attachment_media_type", att.MediaType).
+				Strs("attachment_sizes", sizes).
+				Msg("Failed to download attachment")
 			addMediaFailure(into, "Failed to download attachment")
 			return
 		}
