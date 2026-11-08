@@ -95,6 +95,7 @@ func (c *Client) RunRealtimeChannel(ctx context.Context) error {
 	log := zerolog.Ctx(ctx)
 	var ackID uint64
 	failedRequests := 0
+	connected := false
 	for {
 		if time.Since(lastResubscribe) > ForceResubscribeInterval {
 			log.Debug().Msg("Forcing re-subscribe as channel has been alive for too long")
@@ -146,12 +147,13 @@ func (c *Client) RunRealtimeChannel(ctx context.Context) error {
 			}
 			return fmt.Errorf("failed to send channel request: %w", err)
 		}
-		if failedRequests != 0 || ackID == 0 {
+		if failedRequests != 0 || !connected {
 			log.Debug().
 				Int("failure_count", failedRequests).
 				Uint64("ack_id", ackID).
 				Msg("Realtime long polling connected, sending event")
 			c.dispatchEvent(ctx, &RealtimeConnected{})
+			connected = true
 		}
 		reader := utf16chunk.NewReader(resp.Body)
 	ReadLoop:
