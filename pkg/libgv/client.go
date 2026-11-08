@@ -174,11 +174,13 @@ func (c *Client) DeleteThread(ctx context.Context, threadID string) (*gvproto.Re
 	)
 }
 
-func (c *Client) DownloadAttachment(ctx context.Context, mediaID string) (data []byte, mime string, err error) {
+func (c *Client) DownloadAttachment(ctx context.Context, mediaID string, size gvproto.Attachment_Metadata_SizeSpec) (data []byte, mime string, err error) {
+	var query url.Values
+	if size != gvproto.Attachment_Metadata_UNKNOWN {
+		query = url.Values{"s": {strconv.Itoa(int(size))}}
+	}
 	var resp *http.Response
-	resp, err = c.MakeRequest(ctx, http.MethodGet, fmt.Sprintf(EndpointDownloadTemplate, c.AuthUser, mediaID), url.Values{
-		"s": {strconv.Itoa(int(gvproto.Attachment_Metadata_ORIGINAL))},
-	}, nil, nil)
+	resp, err = c.MakeRequest(ctx, http.MethodGet, fmt.Sprintf(EndpointDownloadTemplate, c.AuthUser, mediaID), query, nil, nil)
 	if err != nil {
 		return
 	}

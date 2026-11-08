@@ -567,7 +567,11 @@ func (gc *GVClient) convertMedia(ctx context.Context, portal *bridgev2.Portal, i
 	var err error
 	useDirectMedia := gc.Main.DirectMedia && att.MimeType != ""
 	if !useDirectMedia {
-		data, mimeType, err = gc.Client.DownloadAttachment(ctx, att.ID)
+		size := gvproto.Attachment_Metadata_UNKNOWN
+		if att.MediaType == gvproto.Attachment_PHOTO || len(att.Metadata) > 0 || strings.HasPrefix(att.MimeType, "image/") {
+			size = gvproto.Attachment_Metadata_ORIGINAL
+		}
+		data, mimeType, err = gc.Client.DownloadAttachment(ctx, att.ID, size)
 		if err != nil {
 			sizes := make([]string, len(att.Metadata))
 			for i, meta := range att.Metadata {
