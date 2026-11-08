@@ -36,6 +36,7 @@ import (
 	"go.mau.fi/util/pblite"
 	"google.golang.org/protobuf/proto"
 
+	"go.mau.fi/mautrix-gvoice/pkg/libgv/gvproto"
 	"go.mau.fi/mautrix-gvoice/pkg/libgv/utf16chunk"
 )
 
@@ -103,13 +104,32 @@ var (
 )
 
 type ResponseError struct {
-	Req  *http.Request
-	Resp *http.Response
-	Body []byte
+	Req        *http.Request
+	Resp       *http.Response
+	Body       []byte
+	VoiceError *gvproto.VoiceError
 }
 
 func (re *ResponseError) Error() string {
+	if re.VoiceError != nil {
+		return fmt.Sprintf("unexpected status code %d (voice error %s)", re.Resp.StatusCode, re.VoiceError.GetCode())
+	}
 	return fmt.Sprintf("unexpected status code %d", re.Resp.StatusCode)
+}
+
+func parseVoiceError(body []byte) *gvproto.VoiceError {
+	jsonData, ok := bytes.CutPrefix(body, []byte("voice_error: "))
+	if !ok {
+		return nil
+	}
+	var wrapper struct {
+		Base64Format []byte `json:"base64_format"`
+	}
+	var voiceErr gvproto.VoiceError
+	if json.Unmarshal(jsonData, &wrapper) != nil || proto.Unmarshal(wrapper.Base64Format, &voiceErr) != nil {
+		return nil
+	}
+	return &voiceErr
 }
 
 func (re *ResponseError) IsAuthError() bool {
@@ -254,11 +274,16 @@ func (c *Client) logRequestFail(ctx context.Context, addr *url.URL, req *http.Re
 		Stringer("request_url", addr).
 		Int("retry_count", retryCount)
 	var data []byte
+	var voiceErr *gvproto.VoiceError
 	if resp != nil {
 		data, _ = io.ReadAll(resp.Body)
 		_ = resp.Body.Close()
+		voiceErr = parseVoiceError(data)
 		logEvt.
 			Int("status_code", resp.StatusCode)
+		if voiceErr != nil {
+			logEvt.Stringer("voice_error", voiceErr.GetCode())
+		}
 		if zerolog.Ctx(ctx).GetLevel() == zerolog.TraceLevel {
 			if json.Valid(data) {
 				logEvt.RawJSON("response_json", data)
@@ -280,9 +305,10 @@ func (c *Client) logRequestFail(ctx context.Context, addr *url.URL, req *http.Re
 		return err
 	}
 	return &ResponseError{
-		Req:  req,
-		Resp: resp,
-		Body: data,
+		Req:        req,
+		Resp:       resp,
+		Body:       data,
+		VoiceError: voiceErr,
 	}
 }
 

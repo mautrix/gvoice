@@ -23,6 +23,16 @@ message RespSendSMS {
     repeated threads.ThreadFolder threadFolders = 5;
 }
 
+message VoiceError {
+    enum Code {
+        UNKNOWN_CODE = 0;
+        TOO_MANY_MESSAGES = 4;
+        FILE_TOO_LARGE = 5;
+    }
+
+    Code code = 1;
+}
+
 message RespUpdateAttributes {
     threads.ThreadAttributes attributes = 1;
 }

@@ -22,6 +22,55 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type VoiceError_Code int32
+
+const (
+	VoiceError_UNKNOWN_CODE      VoiceError_Code = 0
+	VoiceError_TOO_MANY_MESSAGES VoiceError_Code = 4
+	VoiceError_FILE_TOO_LARGE    VoiceError_Code = 5
+)
+
+// Enum value maps for VoiceError_Code.
+var (
+	VoiceError_Code_name = map[int32]string{
+		0: "UNKNOWN_CODE",
+		4: "TOO_MANY_MESSAGES",
+		5: "FILE_TOO_LARGE",
+	}
+	VoiceError_Code_value = map[string]int32{
+		"UNKNOWN_CODE":      0,
+		"TOO_MANY_MESSAGES": 4,
+		"FILE_TOO_LARGE":    5,
+	}
+)
+
+func (x VoiceError_Code) Enum() *VoiceError_Code {
+	p := new(VoiceError_Code)
+	*p = x
+	return p
+}
+
+func (x VoiceError_Code) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (VoiceError_Code) Descriptor() protoreflect.EnumDescriptor {
+	return file_responses_proto_enumTypes[0].Descriptor()
+}
+
+func (VoiceError_Code) Type() protoreflect.EnumType {
+	return &file_responses_proto_enumTypes[0]
+}
+
+func (x VoiceError_Code) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use VoiceError_Code.Descriptor instead.
+func (VoiceError_Code) EnumDescriptor() ([]byte, []int) {
+	return file_responses_proto_rawDescGZIP(), []int{3, 0}
+}
+
 type RespAutocompleteContacts_AffinityResponseContext_Feature_Type int32
 
 const (
@@ -64,11 +113,11 @@ func (x RespAutocompleteContacts_AffinityResponseContext_Feature_Type) String() 
 }
 
 func (RespAutocompleteContacts_AffinityResponseContext_Feature_Type) Descriptor() protoreflect.EnumDescriptor {
-	return file_responses_proto_enumTypes[0].Descriptor()
+	return file_responses_proto_enumTypes[1].Descriptor()
 }
 
 func (RespAutocompleteContacts_AffinityResponseContext_Feature_Type) Type() protoreflect.EnumType {
-	return &file_responses_proto_enumTypes[0]
+	return &file_responses_proto_enumTypes[1]
 }
 
 func (x RespAutocompleteContacts_AffinityResponseContext_Feature_Type) Number() protoreflect.EnumNumber {
@@ -77,7 +126,7 @@ func (x RespAutocompleteContacts_AffinityResponseContext_Feature_Type) Number() 
 
 // Deprecated: Use RespAutocompleteContacts_AffinityResponseContext_Feature_Type.Descriptor instead.
 func (RespAutocompleteContacts_AffinityResponseContext_Feature_Type) EnumDescriptor() ([]byte, []int) {
-	return file_responses_proto_rawDescGZIP(), []int{7, 0, 0, 0}
+	return file_responses_proto_rawDescGZIP(), []int{8, 0, 0, 0}
 }
 
 type RespLookupContacts_Match_FailureType int32
@@ -110,11 +159,11 @@ func (x RespLookupContacts_Match_FailureType) String() string {
 }
 
 func (RespLookupContacts_Match_FailureType) Descriptor() protoreflect.EnumDescriptor {
-	return file_responses_proto_enumTypes[1].Descriptor()
+	return file_responses_proto_enumTypes[2].Descriptor()
 }
 
 func (RespLookupContacts_Match_FailureType) Type() protoreflect.EnumType {
-	return &file_responses_proto_enumTypes[1]
+	return &file_responses_proto_enumTypes[2]
 }
 
 func (x RespLookupContacts_Match_FailureType) Number() protoreflect.EnumNumber {
@@ -123,7 +172,7 @@ func (x RespLookupContacts_Match_FailureType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use RespLookupContacts_Match_FailureType.Descriptor instead.
 func (RespLookupContacts_Match_FailureType) EnumDescriptor() ([]byte, []int) {
-	return file_responses_proto_rawDescGZIP(), []int{8, 0, 0}
+	return file_responses_proto_rawDescGZIP(), []int{9, 0, 0}
 }
 
 type RespGetThread struct {
@@ -298,6 +347,50 @@ func (x *RespSendSMS) GetThreadFolders() []ThreadFolder {
 	return nil
 }
 
+type VoiceError struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Code          VoiceError_Code        `protobuf:"varint,1,opt,name=code,proto3,enum=responses.VoiceError_Code" json:"code,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *VoiceError) Reset() {
+	*x = VoiceError{}
+	mi := &file_responses_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VoiceError) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VoiceError) ProtoMessage() {}
+
+func (x *VoiceError) ProtoReflect() protoreflect.Message {
+	mi := &file_responses_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VoiceError.ProtoReflect.Descriptor instead.
+func (*VoiceError) Descriptor() ([]byte, []int) {
+	return file_responses_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *VoiceError) GetCode() VoiceError_Code {
+	if x != nil {
+		return x.Code
+	}
+	return VoiceError_UNKNOWN_CODE
+}
+
 type RespUpdateAttributes struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Attributes    *ThreadAttributes      `protobuf:"bytes,1,opt,name=attributes,proto3" json:"attributes,omitempty"`
@@ -307,7 +400,7 @@ type RespUpdateAttributes struct {
 
 func (x *RespUpdateAttributes) Reset() {
 	*x = RespUpdateAttributes{}
-	mi := &file_responses_proto_msgTypes[3]
+	mi := &file_responses_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -319,7 +412,7 @@ func (x *RespUpdateAttributes) String() string {
 func (*RespUpdateAttributes) ProtoMessage() {}
 
 func (x *RespUpdateAttributes) ProtoReflect() protoreflect.Message {
-	mi := &file_responses_proto_msgTypes[3]
+	mi := &file_responses_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -332,7 +425,7 @@ func (x *RespUpdateAttributes) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RespUpdateAttributes.ProtoReflect.Descriptor instead.
 func (*RespUpdateAttributes) Descriptor() ([]byte, []int) {
-	return file_responses_proto_rawDescGZIP(), []int{3}
+	return file_responses_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *RespUpdateAttributes) GetAttributes() *ThreadAttributes {
@@ -351,7 +444,7 @@ type RespBatchUpdateAttributes struct {
 
 func (x *RespBatchUpdateAttributes) Reset() {
 	*x = RespBatchUpdateAttributes{}
-	mi := &file_responses_proto_msgTypes[4]
+	mi := &file_responses_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -363,7 +456,7 @@ func (x *RespBatchUpdateAttributes) String() string {
 func (*RespBatchUpdateAttributes) ProtoMessage() {}
 
 func (x *RespBatchUpdateAttributes) ProtoReflect() protoreflect.Message {
-	mi := &file_responses_proto_msgTypes[4]
+	mi := &file_responses_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -376,7 +469,7 @@ func (x *RespBatchUpdateAttributes) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RespBatchUpdateAttributes.ProtoReflect.Descriptor instead.
 func (*RespBatchUpdateAttributes) Descriptor() ([]byte, []int) {
-	return file_responses_proto_rawDescGZIP(), []int{4}
+	return file_responses_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *RespBatchUpdateAttributes) GetItems() *RespUpdateAttributes {
@@ -395,7 +488,7 @@ type RespGetAccount struct {
 
 func (x *RespGetAccount) Reset() {
 	*x = RespGetAccount{}
-	mi := &file_responses_proto_msgTypes[5]
+	mi := &file_responses_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -407,7 +500,7 @@ func (x *RespGetAccount) String() string {
 func (*RespGetAccount) ProtoMessage() {}
 
 func (x *RespGetAccount) ProtoReflect() protoreflect.Message {
-	mi := &file_responses_proto_msgTypes[5]
+	mi := &file_responses_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -420,7 +513,7 @@ func (x *RespGetAccount) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RespGetAccount.ProtoReflect.Descriptor instead.
 func (*RespGetAccount) Descriptor() ([]byte, []int) {
-	return file_responses_proto_rawDescGZIP(), []int{5}
+	return file_responses_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *RespGetAccount) GetAccount() *Account {
@@ -438,7 +531,7 @@ type RespDeleteThread struct {
 
 func (x *RespDeleteThread) Reset() {
 	*x = RespDeleteThread{}
-	mi := &file_responses_proto_msgTypes[6]
+	mi := &file_responses_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -450,7 +543,7 @@ func (x *RespDeleteThread) String() string {
 func (*RespDeleteThread) ProtoMessage() {}
 
 func (x *RespDeleteThread) ProtoReflect() protoreflect.Message {
-	mi := &file_responses_proto_msgTypes[6]
+	mi := &file_responses_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -463,7 +556,7 @@ func (x *RespDeleteThread) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RespDeleteThread.ProtoReflect.Descriptor instead.
 func (*RespDeleteThread) Descriptor() ([]byte, []int) {
-	return file_responses_proto_rawDescGZIP(), []int{6}
+	return file_responses_proto_rawDescGZIP(), []int{7}
 }
 
 type RespAutocompleteContacts struct {
@@ -476,7 +569,7 @@ type RespAutocompleteContacts struct {
 
 func (x *RespAutocompleteContacts) Reset() {
 	*x = RespAutocompleteContacts{}
-	mi := &file_responses_proto_msgTypes[7]
+	mi := &file_responses_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -488,7 +581,7 @@ func (x *RespAutocompleteContacts) String() string {
 func (*RespAutocompleteContacts) ProtoMessage() {}
 
 func (x *RespAutocompleteContacts) ProtoReflect() protoreflect.Message {
-	mi := &file_responses_proto_msgTypes[7]
+	mi := &file_responses_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -501,7 +594,7 @@ func (x *RespAutocompleteContacts) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RespAutocompleteContacts.ProtoReflect.Descriptor instead.
 func (*RespAutocompleteContacts) Descriptor() ([]byte, []int) {
-	return file_responses_proto_rawDescGZIP(), []int{7}
+	return file_responses_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *RespAutocompleteContacts) GetResults() []*PersonWrapper {
@@ -527,7 +620,7 @@ type RespLookupContacts struct {
 
 func (x *RespLookupContacts) Reset() {
 	*x = RespLookupContacts{}
-	mi := &file_responses_proto_msgTypes[8]
+	mi := &file_responses_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -539,7 +632,7 @@ func (x *RespLookupContacts) String() string {
 func (*RespLookupContacts) ProtoMessage() {}
 
 func (x *RespLookupContacts) ProtoReflect() protoreflect.Message {
-	mi := &file_responses_proto_msgTypes[8]
+	mi := &file_responses_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -552,7 +645,7 @@ func (x *RespLookupContacts) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RespLookupContacts.ProtoReflect.Descriptor instead.
 func (*RespLookupContacts) Descriptor() ([]byte, []int) {
-	return file_responses_proto_rawDescGZIP(), []int{8}
+	return file_responses_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *RespLookupContacts) GetMatches() []*RespLookupContacts_Match {
@@ -572,7 +665,7 @@ type RespAutocompleteContacts_AffinityResponseContext struct {
 
 func (x *RespAutocompleteContacts_AffinityResponseContext) Reset() {
 	*x = RespAutocompleteContacts_AffinityResponseContext{}
-	mi := &file_responses_proto_msgTypes[9]
+	mi := &file_responses_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -584,7 +677,7 @@ func (x *RespAutocompleteContacts_AffinityResponseContext) String() string {
 func (*RespAutocompleteContacts_AffinityResponseContext) ProtoMessage() {}
 
 func (x *RespAutocompleteContacts_AffinityResponseContext) ProtoReflect() protoreflect.Message {
-	mi := &file_responses_proto_msgTypes[9]
+	mi := &file_responses_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -597,7 +690,7 @@ func (x *RespAutocompleteContacts_AffinityResponseContext) ProtoReflect() protor
 
 // Deprecated: Use RespAutocompleteContacts_AffinityResponseContext.ProtoReflect.Descriptor instead.
 func (*RespAutocompleteContacts_AffinityResponseContext) Descriptor() ([]byte, []int) {
-	return file_responses_proto_rawDescGZIP(), []int{7, 0}
+	return file_responses_proto_rawDescGZIP(), []int{8, 0}
 }
 
 func (x *RespAutocompleteContacts_AffinityResponseContext) GetAffinityVersion() int32 {
@@ -625,7 +718,7 @@ type RespAutocompleteContacts_AffinityResponseContext_Feature struct {
 
 func (x *RespAutocompleteContacts_AffinityResponseContext_Feature) Reset() {
 	*x = RespAutocompleteContacts_AffinityResponseContext_Feature{}
-	mi := &file_responses_proto_msgTypes[10]
+	mi := &file_responses_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -637,7 +730,7 @@ func (x *RespAutocompleteContacts_AffinityResponseContext_Feature) String() stri
 func (*RespAutocompleteContacts_AffinityResponseContext_Feature) ProtoMessage() {}
 
 func (x *RespAutocompleteContacts_AffinityResponseContext_Feature) ProtoReflect() protoreflect.Message {
-	mi := &file_responses_proto_msgTypes[10]
+	mi := &file_responses_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -650,7 +743,7 @@ func (x *RespAutocompleteContacts_AffinityResponseContext_Feature) ProtoReflect(
 
 // Deprecated: Use RespAutocompleteContacts_AffinityResponseContext_Feature.ProtoReflect.Descriptor instead.
 func (*RespAutocompleteContacts_AffinityResponseContext_Feature) Descriptor() ([]byte, []int) {
-	return file_responses_proto_rawDescGZIP(), []int{7, 0, 0}
+	return file_responses_proto_rawDescGZIP(), []int{8, 0, 0}
 }
 
 func (x *RespAutocompleteContacts_AffinityResponseContext_Feature) GetType() RespAutocompleteContacts_AffinityResponseContext_Feature_Type {
@@ -685,7 +778,7 @@ type RespLookupContacts_Match struct {
 
 func (x *RespLookupContacts_Match) Reset() {
 	*x = RespLookupContacts_Match{}
-	mi := &file_responses_proto_msgTypes[11]
+	mi := &file_responses_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -697,7 +790,7 @@ func (x *RespLookupContacts_Match) String() string {
 func (*RespLookupContacts_Match) ProtoMessage() {}
 
 func (x *RespLookupContacts_Match) ProtoReflect() protoreflect.Message {
-	mi := &file_responses_proto_msgTypes[11]
+	mi := &file_responses_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -710,7 +803,7 @@ func (x *RespLookupContacts_Match) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RespLookupContacts_Match.ProtoReflect.Descriptor instead.
 func (*RespLookupContacts_Match) Descriptor() ([]byte, []int) {
-	return file_responses_proto_rawDescGZIP(), []int{8, 0}
+	return file_responses_proto_rawDescGZIP(), []int{9, 0}
 }
 
 func (x *RespLookupContacts_Match) GetID() *ContactID {
@@ -749,7 +842,14 @@ const file_responses_proto_rawDesc = "" +
 	"\bthreadID\x18\x02 \x01(\tR\bthreadID\x12\"\n" +
 	"\fthreadItemID\x18\x03 \x01(\tR\fthreadItemID\x12 \n" +
 	"\vtimestampMS\x18\x04 \x01(\x03R\vtimestampMS\x12;\n" +
-	"\rthreadFolders\x18\x05 \x03(\x0e2\x15.threads.ThreadFolderR\rthreadFolders\"Q\n" +
+	"\rthreadFolders\x18\x05 \x03(\x0e2\x15.threads.ThreadFolderR\rthreadFolders\"\x81\x01\n" +
+	"\n" +
+	"VoiceError\x12.\n" +
+	"\x04code\x18\x01 \x01(\x0e2\x1a.responses.VoiceError.CodeR\x04code\"C\n" +
+	"\x04Code\x12\x10\n" +
+	"\fUNKNOWN_CODE\x10\x00\x12\x15\n" +
+	"\x11TOO_MANY_MESSAGES\x10\x04\x12\x12\n" +
+	"\x0eFILE_TOO_LARGE\x10\x05\"Q\n" +
 	"\x14RespUpdateAttributes\x129\n" +
 	"\n" +
 	"attributes\x18\x01 \x01(\v2\x19.threads.ThreadAttributesR\n" +
@@ -801,50 +901,53 @@ func file_responses_proto_rawDescGZIP() []byte {
 	return file_responses_proto_rawDescData
 }
 
-var file_responses_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_responses_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_responses_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_responses_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_responses_proto_goTypes = []any{
-	(RespAutocompleteContacts_AffinityResponseContext_Feature_Type)(0), // 0: responses.RespAutocompleteContacts.AffinityResponseContext.Feature.Type
-	(RespLookupContacts_Match_FailureType)(0),                          // 1: responses.RespLookupContacts.Match.FailureType
-	(*RespGetThread)(nil),                                            // 2: responses.RespGetThread
-	(*RespListThreads)(nil),                                          // 3: responses.RespListThreads
-	(*RespSendSMS)(nil),                                              // 4: responses.RespSendSMS
-	(*RespUpdateAttributes)(nil),                                     // 5: responses.RespUpdateAttributes
-	(*RespBatchUpdateAttributes)(nil),                                // 6: responses.RespBatchUpdateAttributes
-	(*RespGetAccount)(nil),                                           // 7: responses.RespGetAccount
-	(*RespDeleteThread)(nil),                                         // 8: responses.RespDeleteThread
-	(*RespAutocompleteContacts)(nil),                                 // 9: responses.RespAutocompleteContacts
-	(*RespLookupContacts)(nil),                                       // 10: responses.RespLookupContacts
-	(*RespAutocompleteContacts_AffinityResponseContext)(nil),         // 11: responses.RespAutocompleteContacts.AffinityResponseContext
-	(*RespAutocompleteContacts_AffinityResponseContext_Feature)(nil), // 12: responses.RespAutocompleteContacts.AffinityResponseContext.Feature
-	(*RespLookupContacts_Match)(nil),                                 // 13: responses.RespLookupContacts.Match
-	(*Thread)(nil),                                                   // 14: threads.Thread
-	(ThreadFolder)(0),                                                // 15: threads.ThreadFolder
-	(*ThreadAttributes)(nil),                                         // 16: threads.ThreadAttributes
-	(*Account)(nil),                                                  // 17: account.Account
-	(*PersonWrapper)(nil),                                            // 18: contacts.PersonWrapper
-	(*ContactID)(nil),                                                // 19: contacts.ContactID
+	(VoiceError_Code)(0), // 0: responses.VoiceError.Code
+	(RespAutocompleteContacts_AffinityResponseContext_Feature_Type)(0), // 1: responses.RespAutocompleteContacts.AffinityResponseContext.Feature.Type
+	(RespLookupContacts_Match_FailureType)(0),                          // 2: responses.RespLookupContacts.Match.FailureType
+	(*RespGetThread)(nil),                                              // 3: responses.RespGetThread
+	(*RespListThreads)(nil),                                            // 4: responses.RespListThreads
+	(*RespSendSMS)(nil),                                                // 5: responses.RespSendSMS
+	(*VoiceError)(nil),                                                 // 6: responses.VoiceError
+	(*RespUpdateAttributes)(nil),                                       // 7: responses.RespUpdateAttributes
+	(*RespBatchUpdateAttributes)(nil),                                  // 8: responses.RespBatchUpdateAttributes
+	(*RespGetAccount)(nil),                                             // 9: responses.RespGetAccount
+	(*RespDeleteThread)(nil),                                           // 10: responses.RespDeleteThread
+	(*RespAutocompleteContacts)(nil),                                   // 11: responses.RespAutocompleteContacts
+	(*RespLookupContacts)(nil),                                         // 12: responses.RespLookupContacts
+	(*RespAutocompleteContacts_AffinityResponseContext)(nil),           // 13: responses.RespAutocompleteContacts.AffinityResponseContext
+	(*RespAutocompleteContacts_AffinityResponseContext_Feature)(nil),   // 14: responses.RespAutocompleteContacts.AffinityResponseContext.Feature
+	(*RespLookupContacts_Match)(nil),                                   // 15: responses.RespLookupContacts.Match
+	(*Thread)(nil),                                                     // 16: threads.Thread
+	(ThreadFolder)(0),                                                  // 17: threads.ThreadFolder
+	(*ThreadAttributes)(nil),                                           // 18: threads.ThreadAttributes
+	(*Account)(nil),                                                    // 19: account.Account
+	(*PersonWrapper)(nil),                                              // 20: contacts.PersonWrapper
+	(*ContactID)(nil),                                                  // 21: contacts.ContactID
 }
 var file_responses_proto_depIdxs = []int32{
-	14, // 0: responses.RespGetThread.thread:type_name -> threads.Thread
-	14, // 1: responses.RespListThreads.threads:type_name -> threads.Thread
-	15, // 2: responses.RespSendSMS.threadFolders:type_name -> threads.ThreadFolder
-	16, // 3: responses.RespUpdateAttributes.attributes:type_name -> threads.ThreadAttributes
-	5,  // 4: responses.RespBatchUpdateAttributes.items:type_name -> responses.RespUpdateAttributes
-	17, // 5: responses.RespGetAccount.account:type_name -> account.Account
-	18, // 6: responses.RespAutocompleteContacts.results:type_name -> contacts.PersonWrapper
-	11, // 7: responses.RespAutocompleteContacts.affinityResponseContext:type_name -> responses.RespAutocompleteContacts.AffinityResponseContext
-	13, // 8: responses.RespLookupContacts.matches:type_name -> responses.RespLookupContacts.Match
-	12, // 9: responses.RespAutocompleteContacts.AffinityResponseContext.features:type_name -> responses.RespAutocompleteContacts.AffinityResponseContext.Feature
-	0,  // 10: responses.RespAutocompleteContacts.AffinityResponseContext.Feature.type:type_name -> responses.RespAutocompleteContacts.AffinityResponseContext.Feature.Type
-	19, // 11: responses.RespLookupContacts.Match.ID:type_name -> contacts.ContactID
-	18, // 12: responses.RespLookupContacts.Match.autocompletion:type_name -> contacts.PersonWrapper
-	1,  // 13: responses.RespLookupContacts.Match.failureType:type_name -> responses.RespLookupContacts.Match.FailureType
-	14, // [14:14] is the sub-list for method output_type
-	14, // [14:14] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	16, // 0: responses.RespGetThread.thread:type_name -> threads.Thread
+	16, // 1: responses.RespListThreads.threads:type_name -> threads.Thread
+	17, // 2: responses.RespSendSMS.threadFolders:type_name -> threads.ThreadFolder
+	0,  // 3: responses.VoiceError.code:type_name -> responses.VoiceError.Code
+	18, // 4: responses.RespUpdateAttributes.attributes:type_name -> threads.ThreadAttributes
+	7,  // 5: responses.RespBatchUpdateAttributes.items:type_name -> responses.RespUpdateAttributes
+	19, // 6: responses.RespGetAccount.account:type_name -> account.Account
+	20, // 7: responses.RespAutocompleteContacts.results:type_name -> contacts.PersonWrapper
+	13, // 8: responses.RespAutocompleteContacts.affinityResponseContext:type_name -> responses.RespAutocompleteContacts.AffinityResponseContext
+	15, // 9: responses.RespLookupContacts.matches:type_name -> responses.RespLookupContacts.Match
+	14, // 10: responses.RespAutocompleteContacts.AffinityResponseContext.features:type_name -> responses.RespAutocompleteContacts.AffinityResponseContext.Feature
+	1,  // 11: responses.RespAutocompleteContacts.AffinityResponseContext.Feature.type:type_name -> responses.RespAutocompleteContacts.AffinityResponseContext.Feature.Type
+	21, // 12: responses.RespLookupContacts.Match.ID:type_name -> contacts.ContactID
+	20, // 13: responses.RespLookupContacts.Match.autocompletion:type_name -> contacts.PersonWrapper
+	2,  // 14: responses.RespLookupContacts.Match.failureType:type_name -> responses.RespLookupContacts.Match.FailureType
+	15, // [15:15] is the sub-list for method output_type
+	15, // [15:15] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_responses_proto_init() }
@@ -860,8 +963,8 @@ func file_responses_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_responses_proto_rawDesc), len(file_responses_proto_rawDesc)),
-			NumEnums:      2,
-			NumMessages:   12,
+			NumEnums:      3,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
