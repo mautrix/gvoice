@@ -442,6 +442,7 @@ const (
 	Attachment_AUDIO        Attachment_MediaType = 1
 	Attachment_VIDEO        Attachment_MediaType = 2
 	Attachment_PHOTO        Attachment_MediaType = 3
+	Attachment_VCARD        Attachment_MediaType = 4
 )
 
 // Enum value maps for Attachment_MediaType.
@@ -451,12 +452,14 @@ var (
 		1: "AUDIO",
 		2: "VIDEO",
 		3: "PHOTO",
+		4: "VCARD",
 	}
 	Attachment_MediaType_value = map[string]int32{
 		"UNKNOWN_TYPE": 0,
 		"AUDIO":        1,
 		"VIDEO":        2,
 		"PHOTO":        3,
+		"VCARD":        4,
 	}
 )
 
@@ -1013,6 +1016,8 @@ type Attachment struct {
 	Status        Attachment_Status      `protobuf:"varint,3,opt,name=status,proto3,enum=threads.Attachment_Status" json:"status,omitempty"`
 	Metadata      []*Attachment_Metadata `protobuf:"bytes,4,rep,name=metadata,proto3" json:"metadata,omitempty"`
 	MediaType     Attachment_MediaType   `protobuf:"varint,5,opt,name=mediaType,proto3,enum=threads.Attachment_MediaType" json:"mediaType,omitempty"`
+	AudioInfo     *Attachment_AudioInfo  `protobuf:"bytes,6,opt,name=audioInfo,proto3" json:"audioInfo,omitempty"`
+	VideoInfo     *Attachment_VideoInfo  `protobuf:"bytes,7,opt,name=videoInfo,proto3" json:"videoInfo,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1080,6 +1085,20 @@ func (x *Attachment) GetMediaType() Attachment_MediaType {
 		return x.MediaType
 	}
 	return Attachment_UNKNOWN_TYPE
+}
+
+func (x *Attachment) GetAudioInfo() *Attachment_AudioInfo {
+	if x != nil {
+		return x.AudioInfo
+	}
+	return nil
+}
+
+func (x *Attachment) GetVideoInfo() *Attachment_VideoInfo {
+	if x != nil {
+		return x.VideoInfo
+	}
+	return nil
 }
 
 type Contact struct {
@@ -1350,6 +1369,154 @@ func (x *Attachment_Metadata) GetHeight() int32 {
 	return 0
 }
 
+type Attachment_Duration struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Seconds       int64                  `protobuf:"varint,1,opt,name=seconds,proto3" json:"seconds,omitempty"`
+	Nanos         int32                  `protobuf:"varint,2,opt,name=nanos,proto3" json:"nanos,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Attachment_Duration) Reset() {
+	*x = Attachment_Duration{}
+	mi := &file_threads_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Attachment_Duration) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Attachment_Duration) ProtoMessage() {}
+
+func (x *Attachment_Duration) ProtoReflect() protoreflect.Message {
+	mi := &file_threads_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Attachment_Duration.ProtoReflect.Descriptor instead.
+func (*Attachment_Duration) Descriptor() ([]byte, []int) {
+	return file_threads_proto_rawDescGZIP(), []int{4, 1}
+}
+
+func (x *Attachment_Duration) GetSeconds() int64 {
+	if x != nil {
+		return x.Seconds
+	}
+	return 0
+}
+
+func (x *Attachment_Duration) GetNanos() int32 {
+	if x != nil {
+		return x.Nanos
+	}
+	return 0
+}
+
+type Attachment_AudioInfo struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Duration      *Attachment_Duration   `protobuf:"bytes,1,opt,name=duration,proto3" json:"duration,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Attachment_AudioInfo) Reset() {
+	*x = Attachment_AudioInfo{}
+	mi := &file_threads_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Attachment_AudioInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Attachment_AudioInfo) ProtoMessage() {}
+
+func (x *Attachment_AudioInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_threads_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Attachment_AudioInfo.ProtoReflect.Descriptor instead.
+func (*Attachment_AudioInfo) Descriptor() ([]byte, []int) {
+	return file_threads_proto_rawDescGZIP(), []int{4, 2}
+}
+
+func (x *Attachment_AudioInfo) GetDuration() *Attachment_Duration {
+	if x != nil {
+		return x.Duration
+	}
+	return nil
+}
+
+type Attachment_VideoInfo struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Duration      *Attachment_Duration   `protobuf:"bytes,1,opt,name=duration,proto3" json:"duration,omitempty"`
+	Metadata      []*Attachment_Metadata `protobuf:"bytes,3,rep,name=metadata,proto3" json:"metadata,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Attachment_VideoInfo) Reset() {
+	*x = Attachment_VideoInfo{}
+	mi := &file_threads_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Attachment_VideoInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Attachment_VideoInfo) ProtoMessage() {}
+
+func (x *Attachment_VideoInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_threads_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Attachment_VideoInfo.ProtoReflect.Descriptor instead.
+func (*Attachment_VideoInfo) Descriptor() ([]byte, []int) {
+	return file_threads_proto_rawDescGZIP(), []int{4, 3}
+}
+
+func (x *Attachment_VideoInfo) GetDuration() *Attachment_Duration {
+	if x != nil {
+		return x.Duration
+	}
+	return nil
+}
+
+func (x *Attachment_VideoInfo) GetMetadata() []*Attachment_Metadata {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
 var File_threads_proto protoreflect.FileDescriptor
 
 const file_threads_proto_rawDesc = "" +
@@ -1445,14 +1612,16 @@ const file_threads_proto_rawDesc = "" +
 	"\vattachments\x18\x03 \x03(\v2\x13.threads.AttachmentR\vattachments\x124\n" +
 	"\fparticipants\x18\x04 \x03(\v2\x10.threads.ContactR\fparticipants\x12,\n" +
 	"\x11senderPhoneNumber\x18\x05 \x01(\tR\x11senderPhoneNumber\x12D\n" +
-	"\x1dphoneNumberKeyToThreadContact\x18\x06 \x03(\tR\x1dphoneNumberKeyToThreadContact\"\x9f\x04\n" +
+	"\x1dphoneNumberKeyToThreadContact\x18\x06 \x03(\tR\x1dphoneNumberKeyToThreadContact\"\xa8\a\n" +
 	"\n" +
 	"Attachment\x12\x1a\n" +
 	"\bmimeType\x18\x01 \x01(\tR\bmimeType\x12\x0e\n" +
 	"\x02ID\x18\x02 \x01(\tR\x02ID\x122\n" +
 	"\x06status\x18\x03 \x01(\x0e2\x1a.threads.Attachment.StatusR\x06status\x128\n" +
 	"\bmetadata\x18\x04 \x03(\v2\x1c.threads.Attachment.MetadataR\bmetadata\x12;\n" +
-	"\tmediaType\x18\x05 \x01(\x0e2\x1d.threads.Attachment.MediaTypeR\tmediaType\x1a\xb9\x01\n" +
+	"\tmediaType\x18\x05 \x01(\x0e2\x1d.threads.Attachment.MediaTypeR\tmediaType\x12;\n" +
+	"\taudioInfo\x18\x06 \x01(\v2\x1d.threads.Attachment.AudioInfoR\taudioInfo\x12;\n" +
+	"\tvideoInfo\x18\a \x01(\v2\x1d.threads.Attachment.VideoInfoR\tvideoInfo\x1a\xb9\x01\n" +
 	"\bMetadata\x129\n" +
 	"\x04size\x18\x01 \x01(\x0e2%.threads.Attachment.Metadata.SizeSpecR\x04size\x12\x14\n" +
 	"\x05width\x18\x02 \x01(\x05R\x05width\x12\x16\n" +
@@ -1462,16 +1631,25 @@ const file_threads_proto_rawDesc = "" +
 	"\bORIGINAL\x10\x01\x12\b\n" +
 	"\x04S128\x10\x02\x12\b\n" +
 	"\x04S512\x10\x03\x12\t\n" +
-	"\x05S1280\x10\x04\">\n" +
+	"\x05S1280\x10\x04\x1a:\n" +
+	"\bDuration\x12\x18\n" +
+	"\aseconds\x18\x01 \x01(\x03R\aseconds\x12\x14\n" +
+	"\x05nanos\x18\x02 \x01(\x05R\x05nanos\x1aE\n" +
+	"\tAudioInfo\x128\n" +
+	"\bduration\x18\x01 \x01(\v2\x1c.threads.Attachment.DurationR\bduration\x1a\x7f\n" +
+	"\tVideoInfo\x128\n" +
+	"\bduration\x18\x01 \x01(\v2\x1c.threads.Attachment.DurationR\bduration\x128\n" +
+	"\bmetadata\x18\x03 \x03(\v2\x1c.threads.Attachment.MetadataR\bmetadata\">\n" +
 	"\x06Status\x12\x12\n" +
 	"\x0eUNKNOWN_STATUS\x10\x00\x12\r\n" +
 	"\tAVAILABLE\x10\x01\x12\x11\n" +
-	"\rNOT_SUPPORTED\x10\x03\">\n" +
+	"\rNOT_SUPPORTED\x10\x03\"I\n" +
 	"\tMediaType\x12\x10\n" +
 	"\fUNKNOWN_TYPE\x10\x00\x12\t\n" +
 	"\x05AUDIO\x10\x01\x12\t\n" +
 	"\x05VIDEO\x10\x02\x12\t\n" +
-	"\x05PHOTO\x10\x03\"Y\n" +
+	"\x05PHOTO\x10\x03\x12\t\n" +
+	"\x05VCARD\x10\x04\"Y\n" +
 	"\aContact\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
 	"\vphoneNumber\x18\x02 \x01(\tR\vphoneNumber\x12\x18\n" +
@@ -1502,7 +1680,7 @@ func file_threads_proto_rawDescGZIP() []byte {
 }
 
 var file_threads_proto_enumTypes = make([]protoimpl.EnumInfo, 10)
-var file_threads_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_threads_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_threads_proto_goTypes = []any{
 	(ThreadFolder)(0),                 // 0: threads.ThreadFolder
 	(ContactSpammerStatus)(0),         // 1: threads.ContactSpammerStatus
@@ -1524,6 +1702,9 @@ var file_threads_proto_goTypes = []any{
 	(*Message_Transcript)(nil),        // 17: threads.Message.Transcript
 	(*Message_TranscriptToken)(nil),   // 18: threads.Message.TranscriptToken
 	(*Attachment_Metadata)(nil),       // 19: threads.Attachment.Metadata
+	(*Attachment_Duration)(nil),       // 20: threads.Attachment.Duration
+	(*Attachment_AudioInfo)(nil),      // 21: threads.Attachment.AudioInfo
+	(*Attachment_VideoInfo)(nil),      // 22: threads.Attachment.VideoInfo
 }
 var file_threads_proto_depIdxs = []int32{
 	12, // 0: threads.Thread.messages:type_name -> threads.Message
@@ -1545,14 +1726,19 @@ var file_threads_proto_depIdxs = []int32{
 	7,  // 16: threads.Attachment.status:type_name -> threads.Attachment.Status
 	19, // 17: threads.Attachment.metadata:type_name -> threads.Attachment.Metadata
 	8,  // 18: threads.Attachment.mediaType:type_name -> threads.Attachment.MediaType
-	6,  // 19: threads.Message.UserFeedback.status:type_name -> threads.Message.UserFeedback.Status
-	18, // 20: threads.Message.Transcript.tokens:type_name -> threads.Message.TranscriptToken
-	9,  // 21: threads.Attachment.Metadata.size:type_name -> threads.Attachment.Metadata.SizeSpec
-	22, // [22:22] is the sub-list for method output_type
-	22, // [22:22] is the sub-list for method input_type
-	22, // [22:22] is the sub-list for extension type_name
-	22, // [22:22] is the sub-list for extension extendee
-	0,  // [0:22] is the sub-list for field type_name
+	21, // 19: threads.Attachment.audioInfo:type_name -> threads.Attachment.AudioInfo
+	22, // 20: threads.Attachment.videoInfo:type_name -> threads.Attachment.VideoInfo
+	6,  // 21: threads.Message.UserFeedback.status:type_name -> threads.Message.UserFeedback.Status
+	18, // 22: threads.Message.Transcript.tokens:type_name -> threads.Message.TranscriptToken
+	9,  // 23: threads.Attachment.Metadata.size:type_name -> threads.Attachment.Metadata.SizeSpec
+	20, // 24: threads.Attachment.AudioInfo.duration:type_name -> threads.Attachment.Duration
+	20, // 25: threads.Attachment.VideoInfo.duration:type_name -> threads.Attachment.Duration
+	19, // 26: threads.Attachment.VideoInfo.metadata:type_name -> threads.Attachment.Metadata
+	27, // [27:27] is the sub-list for method output_type
+	27, // [27:27] is the sub-list for method input_type
+	27, // [27:27] is the sub-list for extension type_name
+	27, // [27:27] is the sub-list for extension extendee
+	0,  // [0:27] is the sub-list for field type_name
 }
 
 func init() { file_threads_proto_init() }
@@ -1566,7 +1752,7 @@ func file_threads_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_threads_proto_rawDesc), len(file_threads_proto_rawDesc)),
 			NumEnums:      10,
-			NumMessages:   10,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
