@@ -759,6 +759,10 @@ func (gc *GVClient) addVoicemailAudio(ctx context.Context, portal *bridgev2.Port
 	if mimeType == "" {
 		mimeType = http.DetectContentType(data)
 	}
+	if !strings.HasPrefix(mimeType, "audio/") {
+		zerolog.Ctx(ctx).Warn().Str("mime_type", mimeType).Msg("Voicemail download didn't return audio")
+		return
+	}
 	fileName := "voicemail" + exmime.ExtensionFromMimetype(mimeType)
 	into.URL, into.File, err = intent.UploadMedia(ctx, portal.MXID, data, fileName, mimeType)
 	if err != nil {
