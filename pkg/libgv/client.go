@@ -192,6 +192,7 @@ func (c *Client) DownloadAttachment(ctx context.Context, mediaID string, mediaTy
 	if err != nil {
 		return
 	}
+	defer resp.Body.Close()
 	mime = resp.Header.Get("Content-Type")
 	data, err = io.ReadAll(resp.Body)
 	return
