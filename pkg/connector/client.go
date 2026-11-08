@@ -69,6 +69,7 @@ type GVClient struct {
 	LoggedIn  atomic.Bool
 
 	lastEvents           map[string]time.Time
+	unreadThreads        map[string]bool
 	portalLatest         map[networkid.PortalKey]time.Time
 	wakeupMessageFetcher chan struct{}
 	fetchEventsLimiter   *rate.Limiter
@@ -92,6 +93,7 @@ func (gv *GVConnector) LoadUserLogin(ctx context.Context, login *bridgev2.UserLo
 		UserLogin: login,
 
 		lastEvents:           make(map[string]time.Time),
+		unreadThreads:        make(map[string]bool),
 		portalLatest:         make(map[networkid.PortalKey]time.Time),
 		wakeupMessageFetcher: make(chan struct{}),
 		fetchEventsLimiter:   rate.NewLimiter(rate.Every(MinRefreshInterval), MinRefreshBurstCount),

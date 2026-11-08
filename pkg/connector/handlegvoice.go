@@ -161,6 +161,8 @@ threadLoop:
 		lastMessageTS := time.UnixMilli(thread.Messages[0].Timestamp)
 		portalKey := gc.makeThreadPortalKey(thread)
 		prevMsg, ok := gc.lastEvents[thread.ID]
+		wasUnread := gc.unreadThreads[thread.ID]
+		gc.unreadThreads[thread.ID] = !thread.Read
 		if ok {
 			gc.syncDMBlock(ctx, portalKey, thread)
 		}
@@ -247,6 +249,17 @@ threadLoop:
 				errs = append(errs, fmt.Errorf("failed to handle message %s in chat %s: %w", msg.ID, thread.ID, result.Error))
 				continue threadLoop
 			}
+		}
+		if wasUnread && thread.Read {
+			gc.Main.Bridge.QueueRemoteEvent(gc.UserLogin, &simplevent.Receipt{
+				EventMeta: simplevent.EventMeta{
+					Type:      bridgev2.RemoteEventReadReceipt,
+					PortalKey: portalKey,
+					Sender:    bridgev2.EventSender{IsFromMe: true},
+				},
+				LastTarget: networkid.MessageID(thread.Messages[0].ID),
+				ReadUpTo:   lastMessageTS,
+			})
 		}
 		gc.markThreadHandled(thread.ID, portalKey, lastMessageTS)
 	}
