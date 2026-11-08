@@ -523,12 +523,17 @@ func (gc *GVClient) convertGVTextOrMMSMessage(ctx context.Context, portal *bridg
 	}
 	content.MsgType = event.MsgText
 	if msg.MMS != nil {
+		text := strings.TrimRight(msg.MMS.Text, "\r\n")
 		if msg.MMS.Subject != "" {
-			content.Body = fmt.Sprintf("**%s**\n%s", msg.MMS.Subject, msg.MMS.Text)
-			content.FormattedBody = fmt.Sprintf("<strong>%s</strong><br>%s", msg.MMS.Subject, msg.MMS.Text)
+			content.Body = fmt.Sprintf("**%s**", msg.MMS.Subject)
+			content.FormattedBody = fmt.Sprintf("<strong>%s</strong>", msg.MMS.Subject)
 			content.Format = event.FormatHTML
+			if text != "" {
+				content.Body += "\n" + text
+				content.FormattedBody += "<br>" + text
+			}
 		} else {
-			content.Body = msg.MMS.Text
+			content.Body = text
 		}
 		for i, att := range msg.MMS.Attachments {
 			if i == 0 {
