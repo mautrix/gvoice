@@ -95,6 +95,17 @@ func (c *Client) GetAccount(ctx context.Context) (*gvproto.RespGetAccount, error
 	)
 }
 
+func (c *Client) RotateCookies(ctx context.Context) error {
+	resp, err := c.MakeRequest(ctx, http.MethodPost, EndpointRotateCookies, nil, http.Header{
+		"Content-Type": {ContentTypeJSON},
+	}, fmt.Sprintf(`[72,"%d"]`, rand.Int64()))
+	if err != nil {
+		return err
+	}
+	_ = resp.Body.Close()
+	return nil
+}
+
 func (c *Client) RegisterPushNotifications(ctx context.Context, deviceID, token string) error {
 	_, err := ReadProtoResponse[*gvproto.RespRegisterDestination](
 		c.MakeRequest(ctx, http.MethodPost, APIBaseURL+"/api2notifications/registerdestination", nil, http.Header{

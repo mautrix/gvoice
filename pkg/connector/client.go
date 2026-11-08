@@ -60,6 +60,7 @@ var RetryTransientErrorLongTimeout = 10 * time.Minute
 const (
 	MaxTransientRetries     = 5
 	HealthyRealtimeDuration = 5 * time.Minute
+	CookieRotationInterval  = 10 * time.Minute
 )
 
 type GVClient struct {
@@ -197,6 +198,7 @@ func (gc *GVClient) connectRealtime() {
 	gc.loadInitialContacts(gc.UserLogin.Log.With().Str("action", "load initial contacts").Logger().WithContext(ctx))
 	go gc.fetchNewMessagesLoop(gc.UserLogin.Log.With().Str("component", "fetch messages loop").Logger().WithContext(ctx))
 	go gc.runElectron(ctx)
+	go gc.rotateCookiesLoop(gc.UserLogin.Log.With().Str("component", "cookie rotation").Logger().WithContext(ctx))
 
 	log := gc.UserLogin.Log.With().Str("component", "realtime channel").Logger()
 	ctx = log.WithContext(ctx)
@@ -244,6 +246,22 @@ func (gc *GVClient) connectRealtime() {
 			return
 		case <-time.After(retryIn):
 			log.Info().Int("retry", transientRetries).Msg("Retrying connection after transient error")
+		}
+	}
+}
+
+func (gc *GVClient) rotateCookiesLoop(ctx context.Context) {
+	ticker := time.NewTicker(CookieRotationInterval)
+	defer ticker.Stop()
+	for {
+		err := gc.Client.RotateCookies(ctx)
+		if err != nil && ctx.Err() == nil {
+			zerolog.Ctx(ctx).Warn().Err(err).Msg("Failed to rotate cookies")
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
 		}
 	}
 }

@@ -51,7 +51,9 @@ func (c *Client) prepareHeaders(req *http.Request) {
 	req.Header.Set("Sec-Ch-Ua-Platform", CHPlatform)
 	req.Header.Set("Sec-Ch-Ua-Mobile", "?0")
 	req.Header.Set("User-Agent", UserAgent)
-	req.Header.Set("X-Goog-AuthUser", c.AuthUser)
+	if req.URL.Host != AccountsDomain {
+		req.Header.Set("X-Goog-AuthUser", c.AuthUser)
+	}
 	if req.URL.Host == APIDomain {
 		req.Header.Set("X-Client-Version", ClientVersion)
 		req.Header.Set("X-ClientDetails", ClientDetails)
@@ -68,7 +70,11 @@ func (c *Client) prepareHeaders(req *http.Request) {
 		req.Header.Set("X-User-Agent", WaaXUserAgent)
 	}
 	req.Header.Set("Sec-Fetch-Dest", "empty")
-	req.Header.Set("Sec-Fetch-Mode", "cors")
+	if req.URL.Host == AccountsDomain {
+		req.Header.Set("Sec-Fetch-Mode", "same-origin")
+	} else {
+		req.Header.Set("Sec-Fetch-Mode", "cors")
+	}
 	if strings.HasSuffix(req.URL.Host, "."+APIDomain) {
 		req.Header.Set("Sec-Fetch-Site", "same-site")
 	} else {
@@ -79,6 +85,9 @@ func (c *Client) prepareHeaders(req *http.Request) {
 	if req.URL.Host == UploadDomain {
 		req.Header.Set("Origin", "https://"+UploadDomain)
 		req.Header.Set("Referer", "https://"+UploadDomain+"/")
+	} else if req.URL.Host == AccountsDomain {
+		req.Header.Set("Origin", "https://"+AccountsDomain)
+		req.Header.Set("Referer", RotateCookiesReferer)
 	} else {
 		req.Header.Set("Origin", Origin)
 		req.Header.Set("Referer", Origin+"/")
@@ -90,7 +99,7 @@ func (c *Client) prepareHeaders(req *http.Request) {
 			Name:  name,
 			Value: value,
 		})
-		if name == "SAPISID" {
+		if name == "SAPISID" && req.URL.Host != AccountsDomain {
 			req.Header.Set("Authorization", SAPISIDHash(Origin, value))
 		}
 	}
@@ -243,7 +252,7 @@ func (c *Client) makeRequestDirect(ctx context.Context, method string, parsedAdd
 	if err != nil {
 		return req, nil, fmt.Errorf("failed to send request: %w", err)
 	}
-	if strings.HasSuffix(parsedAddr.Host, APIDomain) {
+	if strings.HasSuffix(parsedAddr.Host, APIDomain) || parsedAddr.Host == AccountsDomain {
 		c.updateCookies(ctx, resp)
 	}
 	return req, resp, nil
