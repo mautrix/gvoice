@@ -162,7 +162,6 @@ threadLoop:
 		portalKey := gc.makeThreadPortalKey(thread)
 		prevMsg, ok := gc.lastEvents[thread.ID]
 		wasUnread := gc.unreadThreads[thread.ID]
-		gc.unreadThreads[thread.ID] = !thread.Read
 		if ok {
 			gc.syncDMBlock(ctx, portalKey, thread)
 		}
@@ -208,7 +207,7 @@ threadLoop:
 				continue
 			}
 			if result.Queued || backfill.completed {
-				gc.markThreadHandled(thread.ID, portalKey, lastMessageTS)
+				gc.markThreadHandled(thread, portalKey, lastMessageTS)
 				continue
 			}
 			if backfill.err != nil {
@@ -261,13 +260,14 @@ threadLoop:
 				ReadUpTo:   lastMessageTS,
 			})
 		}
-		gc.markThreadHandled(thread.ID, portalKey, lastMessageTS)
+		gc.markThreadHandled(thread, portalKey, lastMessageTS)
 	}
 	return errs
 }
 
-func (gc *GVClient) markThreadHandled(threadID string, portalKey networkid.PortalKey, lastMessageTS time.Time) {
-	gc.lastEvents[threadID] = lastMessageTS
+func (gc *GVClient) markThreadHandled(thread *gvproto.Thread, portalKey networkid.PortalKey, lastMessageTS time.Time) {
+	gc.lastEvents[thread.ID] = lastMessageTS
+	gc.unreadThreads[thread.ID] = !thread.Read
 	if lastMessageTS.After(gc.portalLatest[portalKey]) {
 		gc.portalLatest[portalKey] = lastMessageTS
 	}
