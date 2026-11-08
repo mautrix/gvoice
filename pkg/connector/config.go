@@ -20,6 +20,7 @@ import (
 	_ "embed"
 	"strings"
 	"text/template"
+	"time"
 
 	up "go.mau.fi/util/configupgrade"
 	"gopkg.in/yaml.v3"
@@ -31,8 +32,9 @@ import (
 var ExampleConfig string
 
 type Config struct {
-	DisplaynameTemplate    string `yaml:"displayname_template"`
-	InitialThreadSyncCount int    `yaml:"initial_thread_sync_count"`
+	DisplaynameTemplate    string        `yaml:"displayname_template"`
+	InitialThreadSyncCount int           `yaml:"initial_thread_sync_count"`
+	ThreadSyncPageDelay    time.Duration `yaml:"thread_sync_page_delay"`
 
 	displaynameTemplate *template.Template `yaml:"-"`
 }
@@ -75,4 +77,5 @@ func (c Config) FormatDisplayname(info *gvproto.Contact, contact *ProcessedConta
 func upgradeConfig(helper up.Helper) {
 	helper.Copy(up.Str, "displayname_template")
 	helper.Copy(up.Int, "initial_thread_sync_count")
+	helper.Copy(up.Str|up.Int, "thread_sync_page_delay")
 }
