@@ -239,7 +239,11 @@ func (c *Client) makeRequestDirect(ctx context.Context, method string, parsedAdd
 	}
 	req.Header = headers.Clone()
 	c.prepareHeaders(req)
-	resp, err := c.HTTP.Do(req)
+	httpClient := c.HTTP
+	if method == http.MethodGet && parsedAddr.Host == RealtimeDomain {
+		httpClient = c.lpHTTP
+	}
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return req, nil, fmt.Errorf("failed to send request: %w", err)
 	}
