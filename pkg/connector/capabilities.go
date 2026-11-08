@@ -49,7 +49,7 @@ func (gv *GVConnector) GetBridgeInfoVersion() (info, caps int) {
 	return 1, 5
 }
 
-const MaxTextLength = 2500
+const MaxTextLength = 2500 - len("/me ")
 
 var roomCaps = &event.RoomFeatures{
 	ID:            "fi.mau.gvoice.capabilities.2026_11_08",
