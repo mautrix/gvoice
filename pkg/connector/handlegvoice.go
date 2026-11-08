@@ -50,7 +50,7 @@ const (
 	MinRefreshInterval        = 10 * time.Second
 	MinRefreshBurstCount      = 5
 	RefreshDelay              = 500 * time.Millisecond
-	ThreadSyncPageTimeout     = 5 * time.Minute
+	ThreadSyncPageTimeout     = 1 * time.Minute
 )
 
 var _ bridgev2.BackfillingNetworkAPI = (*GVClient)(nil)
