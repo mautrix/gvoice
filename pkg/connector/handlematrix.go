@@ -36,6 +36,7 @@ import (
 
 var (
 	_ bridgev2.ReadReceiptHandlingNetworkAPI = (*GVClient)(nil)
+	_ bridgev2.RedactionHandlingNetworkAPI   = (*GVClient)(nil)
 	_ bridgev2.DeleteChatHandlingNetworkAPI  = (*GVClient)(nil)
 	_ bridgev2.UserBlockingNetworkAPI        = (*GVClient)(nil)
 )
@@ -192,6 +193,11 @@ func (gc *GVClient) HandleMatrixReadReceipt(ctx context.Context, msg *bridgev2.M
 		}
 	}
 	return errors.Join(errs...)
+}
+
+func (gc *GVClient) HandleMatrixMessageRemove(ctx context.Context, msg *bridgev2.MatrixMessageRemove) error {
+	_, err := gc.Client.DeleteMessages(ctx, string(msg.TargetMessage.ID))
+	return gc.wrapSendError(ctx, err)
 }
 
 func (gc *GVClient) HandleMatrixDeleteChat(ctx context.Context, chat *bridgev2.MatrixDeleteChat) error {
