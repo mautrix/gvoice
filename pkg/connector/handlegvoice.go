@@ -565,13 +565,9 @@ func (gc *GVClient) convertMedia(ctx context.Context, portal *bridgev2.Portal, i
 	var data []byte
 	var mimeType string
 	var err error
-	useDirectMedia := gc.Main.DirectMedia && att.MimeType != ""
+	useDirectMedia := gc.Main.DirectMedia && att.MimeType != "" && att.MediaType == gvproto.Attachment_PHOTO
 	if !useDirectMedia {
-		size := gvproto.Attachment_Metadata_UNKNOWN
-		if att.MediaType == gvproto.Attachment_PHOTO || len(att.Metadata) > 0 || strings.HasPrefix(att.MimeType, "image/") {
-			size = gvproto.Attachment_Metadata_ORIGINAL
-		}
-		data, mimeType, err = gc.Client.DownloadAttachment(ctx, att.ID, size)
+		data, mimeType, err = gc.Client.DownloadAttachment(ctx, att.ID, att.MediaType)
 		if err != nil {
 			sizes := make([]string, len(att.Metadata))
 			for i, meta := range att.Metadata {
@@ -587,7 +583,7 @@ func (gc *GVClient) convertMedia(ctx context.Context, portal *bridgev2.Portal, i
 			return
 		}
 	}
-	if att.MimeType != "" {
+	if att.MimeType != "" && att.MediaType != gvproto.Attachment_AUDIO {
 		mimeType = att.MimeType
 	}
 	if mimeType == "" {

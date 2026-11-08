@@ -51,7 +51,7 @@ func (gv *GVConnector) Download(ctx context.Context, mediaID networkid.MediaID, 
 	} else if login == nil || !login.Client.IsLoggedIn() {
 		return nil, bridgev2.ErrNotLoggedIn
 	}
-	data, mimeType, err := login.Client.(*GVClient).Client.DownloadAttachment(ctx, attachmentID, gvproto.Attachment_Metadata_ORIGINAL)
+	data, mimeType, err := login.Client.(*GVClient).Client.DownloadAttachment(ctx, attachmentID, gvproto.Attachment_PHOTO)
 	if err != nil {
 		var respErr *libgv.ResponseError
 		if errors.As(err, &respErr) {
