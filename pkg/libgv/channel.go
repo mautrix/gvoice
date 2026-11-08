@@ -182,6 +182,7 @@ func (c *Client) RunRealtimeChannel(ctx context.Context) error {
 				log.Err(err).Msg("Failed to parse chunk into list")
 				break
 			}
+			reconnect := false
 			for i, entry := range entries {
 				if bytes.HasSuffix(entry, noopSuffix) {
 					var parsed gvproto.WebChannelNoopEvent
@@ -199,20 +200,24 @@ func (c *Client) RunRealtimeChannel(ctx context.Context) error {
 						return fmt.Errorf("failed to parse entry #%d: %w", i+1, err)
 					}
 					if len(parsed.GetDataWrapper()) == 1 && parsed.GetDataWrapper()[0].GetAltData().GetReconnect() {
-						_ = resp.Body.Close()
-						log.Debug().Msg("Got event that probably means we need to reconnect")
-						gSessionID, channel, err = c.SubscribeRealtimeChannel(ctx)
-						if err != nil {
-							return fmt.Errorf("failed to re-subscribe after timeout: %w", err)
-						}
-						lastResubscribe = time.Now()
-						ackID = 0
-						break ReadLoop
+						reconnect = true
+						continue
 					}
 					ackID = parsed.ArrayID
 					c.dispatchEvent(ctx, &RealtimeEvent{WebChannelEvent: &parsed})
 				}
 				failedRequests = 0
+			}
+			if reconnect {
+				_ = resp.Body.Close()
+				log.Debug().Msg("Got event that probably means we need to reconnect")
+				gSessionID, channel, err = c.SubscribeRealtimeChannel(ctx)
+				if err != nil {
+					return fmt.Errorf("failed to re-subscribe after timeout: %w", err)
+				}
+				lastResubscribe = time.Now()
+				ackID = 0
+				break ReadLoop
 			}
 		}
 	}
