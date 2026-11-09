@@ -797,5 +797,11 @@ func logUnknownGVMessage(ctx context.Context, msg *gvproto.Message, reason strin
 		Str("coarse_type", msg.GetCoarseType().String()).
 		Str("text", msg.GetText()).
 		Bool("has_mms", msg.GetMMS() != nil).
+		Float32("duration_seconds", msg.GetDurationSeconds()).
+		Bool("has_media_url", msg.GetMediaURL() != "").
+		Bool("has_transcript", msg.GetTranscript() != nil).
+		Str("transcript_status", msg.GetTranscriptStatus().String()).
+		Bool("has_contact", msg.GetContact() != nil).
+		Bool("is_artificial_error", msg.GetIsArtificialErrorMessage()).
 		Msg("Encountered unknown Google Voice message")
 }
