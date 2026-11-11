@@ -174,14 +174,25 @@ func (c *Client) DeleteThread(ctx context.Context, threadID string) (*gvproto.Re
 	)
 }
 
-func (c *Client) DownloadAttachment(ctx context.Context, mediaID string) (data []byte, mime string, err error) {
+func (c *Client) DownloadAttachment(ctx context.Context, mediaID string, mediaType gvproto.Attachment_MediaType) (data []byte, mime string, err error) {
+	var addr string
+	var query url.Values
+	switch mediaType {
+	case gvproto.Attachment_VIDEO:
+		addr = fmt.Sprintf(EndpointDownloadVideoTemplate, c.AuthUser, mediaID)
+		query = url.Values{"m": {"content"}}
+	case gvproto.Attachment_AUDIO:
+		addr = fmt.Sprintf(EndpointDownloadAudioTemplate, c.AuthUser, mediaID)
+	default:
+		addr = fmt.Sprintf(EndpointDownloadTemplate, c.AuthUser, mediaID)
+		query = url.Values{"s": {strconv.Itoa(int(gvproto.Attachment_Metadata_ORIGINAL))}}
+	}
 	var resp *http.Response
-	resp, err = c.MakeRequest(ctx, http.MethodGet, fmt.Sprintf(EndpointDownloadTemplate, c.AuthUser, mediaID), url.Values{
-		"s": {strconv.Itoa(int(gvproto.Attachment_Metadata_ORIGINAL))},
-	}, nil, nil)
+	resp, err = c.MakeRequest(ctx, http.MethodGet, addr, query, nil, nil)
 	if err != nil {
 		return
 	}
+	defer resp.Body.Close()
 	mime = resp.Header.Get("Content-Type")
 	data, err = io.ReadAll(resp.Body)
 	return

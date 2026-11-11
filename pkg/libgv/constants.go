@@ -72,8 +72,10 @@ const (
 	EndpointRealtimeChannel      = RealtimeBaseURL + "/punctual/multi-watch/channel"
 	EndpointRealtimeChooseServer = RealtimeBaseURL + "/punctual/v1/chooseServer"
 
-	EndpointUpload           = "https://" + UploadDomain + "/upload/photos/resumable"
-	EndpointDownloadTemplate = "https://voice.google.com/u/%s/a/i/%s"
+	EndpointUpload                = "https://" + UploadDomain + "/upload/photos/resumable"
+	EndpointDownloadTemplate      = "https://voice.google.com/u/%s/a/i/%s"
+	EndpointDownloadVideoTemplate = "https://voice.google.com/u/%s/a/vi/%s"
+	EndpointDownloadAudioTemplate = "https://voice.google.com/u/%s/a/au/%s"
 
 	ContactsBaseURL              = "https://" + ContactsDomain + "/$rpc/peoplestack.PeopleStackAutocompleteService"
 	EndpointAutocompleteContacts = ContactsBaseURL + "/Autocomplete"
