@@ -125,6 +125,8 @@ message Attachment {
 
     enum MediaType {
         UNKNOWN_TYPE = 0;
+        AUDIO = 1;
+        VIDEO = 2;
         PHOTO = 3;
     }
 
