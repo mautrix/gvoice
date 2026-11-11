@@ -663,6 +663,14 @@ func convertGVCallMessage(msg *gvproto.Message) *bridgev2.ConvertedMessage {
 		default:
 			body = formatGVVoiceCallBody(msg.GetDurationSeconds())
 		}
+	case gvproto.Message_CALL_TYPE_RECORDED:
+		if msg.GetType() != gvproto.Message_RECORDED_CALL {
+			return nil
+		}
+		body = "Recorded voice call"
+		if duration := formatGVCallDuration(msg.GetDurationSeconds()); duration != "" {
+			body += " • " + duration
+		}
 	default:
 		return nil
 	}
