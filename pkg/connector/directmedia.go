@@ -13,6 +13,7 @@ import (
 	"maunium.net/go/mautrix/mediaproxy"
 
 	"go.mau.fi/mautrix-gvoice/pkg/libgv"
+	"go.mau.fi/mautrix-gvoice/pkg/libgv/gvproto"
 )
 
 var _ bridgev2.DirectMediableNetwork = (*GVConnector)(nil)
@@ -50,7 +51,7 @@ func (gv *GVConnector) Download(ctx context.Context, mediaID networkid.MediaID, 
 	} else if login == nil || !login.Client.IsLoggedIn() {
 		return nil, bridgev2.ErrNotLoggedIn
 	}
-	data, mimeType, err := login.Client.(*GVClient).Client.DownloadAttachment(ctx, attachmentID)
+	data, mimeType, err := login.Client.(*GVClient).Client.DownloadAttachment(ctx, attachmentID, gvproto.Attachment_PHOTO)
 	if err != nil {
 		var respErr *libgv.ResponseError
 		if errors.As(err, &respErr) {

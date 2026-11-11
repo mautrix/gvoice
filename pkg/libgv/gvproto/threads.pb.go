@@ -439,6 +439,8 @@ type Attachment_MediaType int32
 
 const (
 	Attachment_UNKNOWN_TYPE Attachment_MediaType = 0
+	Attachment_AUDIO        Attachment_MediaType = 1
+	Attachment_VIDEO        Attachment_MediaType = 2
 	Attachment_PHOTO        Attachment_MediaType = 3
 )
 
@@ -446,10 +448,14 @@ const (
 var (
 	Attachment_MediaType_name = map[int32]string{
 		0: "UNKNOWN_TYPE",
+		1: "AUDIO",
+		2: "VIDEO",
 		3: "PHOTO",
 	}
 	Attachment_MediaType_value = map[string]int32{
 		"UNKNOWN_TYPE": 0,
+		"AUDIO":        1,
+		"VIDEO":        2,
 		"PHOTO":        3,
 	}
 )
@@ -1439,7 +1445,7 @@ const file_threads_proto_rawDesc = "" +
 	"\vattachments\x18\x03 \x03(\v2\x13.threads.AttachmentR\vattachments\x124\n" +
 	"\fparticipants\x18\x04 \x03(\v2\x10.threads.ContactR\fparticipants\x12,\n" +
 	"\x11senderPhoneNumber\x18\x05 \x01(\tR\x11senderPhoneNumber\x12D\n" +
-	"\x1dphoneNumberKeyToThreadContact\x18\x06 \x03(\tR\x1dphoneNumberKeyToThreadContact\"\x89\x04\n" +
+	"\x1dphoneNumberKeyToThreadContact\x18\x06 \x03(\tR\x1dphoneNumberKeyToThreadContact\"\x9f\x04\n" +
 	"\n" +
 	"Attachment\x12\x1a\n" +
 	"\bmimeType\x18\x01 \x01(\tR\bmimeType\x12\x0e\n" +
@@ -1460,9 +1466,11 @@ const file_threads_proto_rawDesc = "" +
 	"\x06Status\x12\x12\n" +
 	"\x0eUNKNOWN_STATUS\x10\x00\x12\r\n" +
 	"\tAVAILABLE\x10\x01\x12\x11\n" +
-	"\rNOT_SUPPORTED\x10\x03\"(\n" +
+	"\rNOT_SUPPORTED\x10\x03\">\n" +
 	"\tMediaType\x12\x10\n" +
 	"\fUNKNOWN_TYPE\x10\x00\x12\t\n" +
+	"\x05AUDIO\x10\x01\x12\t\n" +
+	"\x05VIDEO\x10\x02\x12\t\n" +
 	"\x05PHOTO\x10\x03\"Y\n" +
 	"\aContact\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +

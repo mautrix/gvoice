@@ -568,9 +568,10 @@ func (gc *GVClient) convertMedia(ctx context.Context, portal *bridgev2.Portal, i
 	var data []byte
 	var mimeType string
 	var err error
-	useDirectMedia := gc.Main.DirectMedia && att.MimeType != ""
+	transcoded := att.MediaType == gvproto.Attachment_AUDIO || att.MediaType == gvproto.Attachment_VIDEO
+	useDirectMedia := gc.Main.DirectMedia && att.MimeType != "" && !transcoded
 	if !useDirectMedia {
-		data, mimeType, err = gc.Client.DownloadAttachment(ctx, att.ID)
+		data, mimeType, err = gc.Client.DownloadAttachment(ctx, att.ID, att.MediaType)
 		if err != nil {
 			sizes := make([]string, len(att.Metadata))
 			for i, meta := range att.Metadata {
@@ -586,7 +587,7 @@ func (gc *GVClient) convertMedia(ctx context.Context, portal *bridgev2.Portal, i
 			return
 		}
 	}
-	if att.MimeType != "" {
+	if att.MimeType != "" && (!transcoded || mimeType == "") {
 		mimeType = att.MimeType
 	}
 	if mimeType == "" {
@@ -830,5 +831,11 @@ func logUnknownGVMessage(ctx context.Context, msg *gvproto.Message, reason strin
 		Str("coarse_type", msg.GetCoarseType().String()).
 		Str("text", msg.GetText()).
 		Bool("has_mms", msg.GetMMS() != nil).
+		Float32("duration_seconds", msg.GetDurationSeconds()).
+		Bool("has_media_url", msg.GetMediaURL() != "").
+		Bool("has_transcript", msg.GetTranscript() != nil).
+		Str("transcript_status", msg.GetTranscriptStatus().String()).
+		Bool("has_contact", msg.GetContact() != nil).
+		Bool("is_artificial_error", msg.GetIsArtificialErrorMessage()).
 		Msg("Encountered unknown Google Voice message")
 }
