@@ -187,7 +187,9 @@ func (gc *GVClient) HandleMatrixReadReceipt(ctx context.Context, msg *bridgev2.M
 			UnknownInt: 1,
 		})
 		zerolog.Ctx(ctx).Trace().Str("thread_id", threadID).Any("resp", resp).Msg("Update attributes response")
-		if err != nil {
+		if libgv.IsNotFoundError(err) {
+			zerolog.Ctx(ctx).Debug().Str("thread_id", threadID).Msg("Thread not found on Google Voice, not marking as read")
+		} else if err != nil {
 			errs = append(errs, fmt.Errorf("failed to mark %s as read: %w", threadID, err))
 		}
 	}

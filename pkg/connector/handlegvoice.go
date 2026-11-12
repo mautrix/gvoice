@@ -399,7 +399,10 @@ func (gc *GVClient) FetchMessages(ctx context.Context, params bridgev2.FetchMess
 		}
 		for len(messagesToConvert) < params.Count && paginationToken != "" {
 			resp, err := gc.Client.GetThread(ctx, threadID, 100, paginationToken)
-			if err != nil {
+			if thread == nil && libgv.IsNotFoundError(err) {
+				zerolog.Ctx(ctx).Debug().Str("thread_id", threadID).Msg("Thread not found on Google Voice, no older messages to backfill")
+				return &bridgev2.FetchMessagesResponse{}, nil
+			} else if err != nil {
 				return nil, fmt.Errorf("failed to fetch messages: %w", err)
 			}
 			thread = resp.Thread
