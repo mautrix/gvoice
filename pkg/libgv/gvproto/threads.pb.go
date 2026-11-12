@@ -135,6 +135,7 @@ const (
 	Message_MISSED_CALL             Message_Type = 0
 	Message_INCOMING_CALL           Message_Type = 1
 	Message_VOICEMAIL               Message_Type = 2
+	Message_RECORDED_CALL           Message_Type = 4
 	Message_OUTGOING_CALL           Message_Type = 7
 	Message_SMS_IN                  Message_Type = 10
 	Message_SMS_OUT                 Message_Type = 11
@@ -147,6 +148,7 @@ var (
 		0:  "MISSED_CALL",
 		1:  "INCOMING_CALL",
 		2:  "VOICEMAIL",
+		4:  "RECORDED_CALL",
 		7:  "OUTGOING_CALL",
 		10: "SMS_IN",
 		11: "SMS_OUT",
@@ -156,6 +158,7 @@ var (
 		"MISSED_CALL":             0,
 		"INCOMING_CALL":           1,
 		"VOICEMAIL":               2,
+		"RECORDED_CALL":           4,
 		"OUTGOING_CALL":           7,
 		"SMS_IN":                  10,
 		"SMS_OUT":                 11,
@@ -197,6 +200,7 @@ const (
 	Message_CALL_TYPE_INCOMING  Message_CoarseType = 1
 	Message_CALL_TYPE_OUTGOING  Message_CoarseType = 2
 	Message_CALL_TYPE_VOICEMAIL Message_CoarseType = 3
+	Message_CALL_TYPE_RECORDED  Message_CoarseType = 4
 	Message_CALL_TYPE_SMS_IN    Message_CoarseType = 5
 	Message_CALL_TYPE_SMS_OUT   Message_CoarseType = 6
 )
@@ -208,6 +212,7 @@ var (
 		1: "CALL_TYPE_INCOMING",
 		2: "CALL_TYPE_OUTGOING",
 		3: "CALL_TYPE_VOICEMAIL",
+		4: "CALL_TYPE_RECORDED",
 		5: "CALL_TYPE_SMS_IN",
 		6: "CALL_TYPE_SMS_OUT",
 	}
@@ -216,6 +221,7 @@ var (
 		"CALL_TYPE_INCOMING":  1,
 		"CALL_TYPE_OUTGOING":  2,
 		"CALL_TYPE_VOICEMAIL": 3,
+		"CALL_TYPE_RECORDED":  4,
 		"CALL_TYPE_SMS_IN":    5,
 		"CALL_TYPE_SMS_OUT":   6,
 	}
@@ -1373,7 +1379,7 @@ const file_threads_proto_rawDesc = "" +
 	"\afolders\x18\x05 \x03(\x0e2\x15.threads.ThreadFolderR\afolders\x12\x1a\n" +
 	"\barchived\x18\x06 \x01(\bR\barchived\x12\x1c\n" +
 	"\tgroupName\x18\a \x01(\tR\tgroupName\x12Q\n" +
-	"\x14contactSpammerStatus\x18\b \x01(\x0e2\x1d.threads.ContactSpammerStatusR\x14contactSpammerStatus\"\xbf\v\n" +
+	"\x14contactSpammerStatus\x18\b \x01(\x0e2\x1d.threads.ContactSpammerStatusR\x14contactSpammerStatus\"\xea\v\n" +
 	"\aMessage\x12\x0e\n" +
 	"\x02ID\x18\x01 \x01(\tR\x02ID\x12\x1c\n" +
 	"\ttimestamp\x18\x02 \x01(\x03R\ttimestamp\x12$\n" +
@@ -1412,23 +1418,25 @@ const file_threads_proto_rawDesc = "" +
 	"\x04text\x18\x01 \x01(\fR\x04text\x12\x1e\n" +
 	"\n" +
 	"confidence\x18\x04 \x01(\x02R\n" +
-	"confidence\"\x82\x01\n" +
+	"confidence\"\x95\x01\n" +
 	"\x04Type\x12\x0f\n" +
 	"\vMISSED_CALL\x10\x00\x12\x11\n" +
 	"\rINCOMING_CALL\x10\x01\x12\r\n" +
 	"\tVOICEMAIL\x10\x02\x12\x11\n" +
+	"\rRECORDED_CALL\x10\x04\x12\x11\n" +
 	"\rOUTGOING_CALL\x10\a\x12\n" +
 	"\n" +
 	"\x06SMS_IN\x10\n" +
 	"\x12\v\n" +
 	"\aSMS_OUT\x10\v\x12\x1b\n" +
-	"\x17OUTGOING_CALL_CANCELLED\x10\x0e\"\x98\x01\n" +
+	"\x17OUTGOING_CALL_CANCELLED\x10\x0e\"\xb0\x01\n" +
 	"\n" +
 	"CoarseType\x12\x14\n" +
 	"\x10CALL_TYPE_MISSED\x10\x00\x12\x16\n" +
 	"\x12CALL_TYPE_INCOMING\x10\x01\x12\x16\n" +
 	"\x12CALL_TYPE_OUTGOING\x10\x02\x12\x17\n" +
-	"\x13CALL_TYPE_VOICEMAIL\x10\x03\x12\x14\n" +
+	"\x13CALL_TYPE_VOICEMAIL\x10\x03\x12\x16\n" +
+	"\x12CALL_TYPE_RECORDED\x10\x04\x12\x14\n" +
 	"\x10CALL_TYPE_SMS_IN\x10\x05\x12\x15\n" +
 	"\x11CALL_TYPE_SMS_OUT\x10\x06\"\x1e\n" +
 	"\x06Status\x12\n" +
