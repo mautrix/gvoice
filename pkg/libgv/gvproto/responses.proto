@@ -39,6 +39,10 @@ message RespDeleteThread {
 
 }
 
+message RespDeleteMessages {
+
+}
+
 message RespAutocompleteContacts {
     message AffinityResponseContext {
         message Feature {

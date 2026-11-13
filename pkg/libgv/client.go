@@ -174,6 +174,16 @@ func (c *Client) DeleteThread(ctx context.Context, threadID string) (*gvproto.Re
 	)
 }
 
+func (c *Client) DeleteMessages(ctx context.Context, messageIDs ...string) (*gvproto.RespDeleteMessages, error) {
+	return ReadProtoResponse[*gvproto.RespDeleteMessages](
+		c.MakeRequest(ctx, http.MethodPost, EndpointDeleteMessages, nil, nil, &gvproto.ReqDeleteMessages{
+			MessageIDs: &gvproto.ReqDeleteMessages_MessageIDs{
+				IDs: messageIDs,
+			},
+		}),
+	)
+}
+
 func (c *Client) DownloadAttachment(ctx context.Context, mediaID string, mediaType gvproto.Attachment_MediaType) (data []byte, mime string, err error) {
 	var addr string
 	var query url.Values

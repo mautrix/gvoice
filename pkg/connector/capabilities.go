@@ -46,11 +46,11 @@ func (gv *GVConnector) GetCapabilities() *bridgev2.NetworkGeneralCapabilities {
 }
 
 func (gv *GVConnector) GetBridgeInfoVersion() (info, caps int) {
-	return 1, 4
+	return 1, 5
 }
 
 var roomCaps = &event.RoomFeatures{
-	ID:            "fi.mau.gvoice.capabilities.2026_10_16",
+	ID:            "fi.mau.gvoice.capabilities.2026_11_08",
 	MaxTextLength: 160,
 	File: map[event.MessageType]*event.FileFeatures{
 		event.MsgImage: {
@@ -74,7 +74,8 @@ var roomCaps = &event.RoomFeatures{
 			},
 		},
 	},
-	DeleteChat: true,
+	DeleteForMe: true,
+	DeleteChat:  true,
 }
 
 var dmCaps *event.RoomFeatures
