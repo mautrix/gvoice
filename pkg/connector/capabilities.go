@@ -46,17 +46,19 @@ func (gv *GVConnector) GetCapabilities() *bridgev2.NetworkGeneralCapabilities {
 }
 
 func (gv *GVConnector) GetBridgeInfoVersion() (info, caps int) {
-	return 1, 4
+	return 1, 5
 }
 
+const MaxTextLength = 2500 - len("/me ")
+
 var roomCaps = &event.RoomFeatures{
-	ID:            "fi.mau.gvoice.capabilities.2026_10_16",
-	MaxTextLength: 160,
+	ID:            "fi.mau.gvoice.capabilities.2026_11_08",
+	MaxTextLength: MaxTextLength,
 	File: map[event.MessageType]*event.FileFeatures{
 		event.MsgImage: {
 			MaxSize:          2 * 1024 * 1024,
 			Caption:          event.CapLevelFullySupported,
-			MaxCaptionLength: 160,
+			MaxCaptionLength: MaxTextLength,
 			MimeTypes: map[string]event.CapabilitySupportLevel{
 				"image/png":  event.CapLevelFullySupported,
 				"image/jpeg": event.CapLevelFullySupported,
@@ -68,7 +70,7 @@ var roomCaps = &event.RoomFeatures{
 		event.CapMsgGIF: {
 			MaxSize:          2 * 1024 * 1024,
 			Caption:          event.CapLevelFullySupported,
-			MaxCaptionLength: 160,
+			MaxCaptionLength: MaxTextLength,
 			MimeTypes: map[string]event.CapabilitySupportLevel{
 				"image/gif": event.CapLevelFullySupported,
 			},
