@@ -495,8 +495,11 @@ func (gc *GVClient) makeMessageConverter(threadID string) func(context.Context, 
 }
 
 func (gc *GVClient) convertMessage(ctx context.Context, portal *bridgev2.Portal, intent bridgev2.MatrixAPI, msg *gvproto.Message) (*bridgev2.ConvertedMessage, error) {
+	if converted := convertGVVoicemailMessage(msg); converted != nil {
+		gc.addVoicemailAudio(ctx, portal, intent, msg, converted.Parts[0].Content)
+		return converted, nil
+	}
 	for _, converted := range []*bridgev2.ConvertedMessage{
-		convertGVVoicemailMessage(msg),
 		convertGVCallMessage(msg),
 		convertGVMissedCallMessage(msg),
 	} {
@@ -757,6 +760,36 @@ func convertGVVoicemailMessage(msg *gvproto.Message) *bridgev2.ConvertedMessage 
 			},
 		}},
 	}
+}
+
+func (gc *GVClient) addVoicemailAudio(ctx context.Context, portal *bridgev2.Portal, intent bridgev2.MatrixAPI, msg *gvproto.Message, into *event.MessageEventContent) {
+	data, mimeType, err := gc.Client.DownloadVoicemail(ctx, msg.GetID())
+	if err != nil {
+		zerolog.Ctx(ctx).Err(err).Msg("Failed to download voicemail audio")
+		return
+	}
+	if mimeType == "" {
+		mimeType = http.DetectContentType(data)
+	}
+	if !strings.HasPrefix(mimeType, "audio/") {
+		zerolog.Ctx(ctx).Warn().Str("mime_type", mimeType).Msg("Voicemail download didn't return audio")
+		return
+	}
+	fileName := "voicemail" + exmime.ExtensionFromMimetype(mimeType)
+	into.URL, into.File, err = intent.UploadMedia(ctx, portal.MXID, data, fileName, mimeType)
+	if err != nil {
+		zerolog.Ctx(ctx).Err(err).Msg("Failed to reupload voicemail audio")
+		return
+	}
+	durationMS := int(msg.GetDurationSeconds() * 1000)
+	into.MsgType = event.MsgAudio
+	into.FileName = fileName
+	into.Info = &event.FileInfo{
+		MimeType: mimeType,
+		Size:     len(data),
+		Duration: durationMS,
+	}
+	into.MSC1767Audio = &event.MSC1767Audio{Duration: durationMS}
 }
 
 func buildGVVoicemailTranscript(transcript *gvproto.Message_Transcript) string {
