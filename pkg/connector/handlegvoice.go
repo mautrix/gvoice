@@ -561,7 +561,7 @@ func isEmptyGVConvertedMessage(msg *bridgev2.ConvertedMessage) bool {
 }
 
 func (gc *GVClient) convertMedia(ctx context.Context, portal *bridgev2.Portal, intent bridgev2.MatrixAPI, att *gvproto.Attachment, into *event.MessageEventContent) {
-	if att.Status == gvproto.Attachment_NOT_SUPPORTED {
+	if att.Status == gvproto.Attachment_NOT_SUPPORTED && att.MediaType != gvproto.Attachment_VCARD {
 		addMediaFailure(into, "File type not supported by Google Voice")
 		return
 	}
@@ -569,7 +569,7 @@ func (gc *GVClient) convertMedia(ctx context.Context, portal *bridgev2.Portal, i
 	var mimeType string
 	var err error
 	transcoded := att.MediaType == gvproto.Attachment_AUDIO || att.MediaType == gvproto.Attachment_VIDEO
-	useDirectMedia := gc.Main.DirectMedia && att.MimeType != "" && !transcoded
+	useDirectMedia := gc.Main.DirectMedia && att.MimeType != "" && !transcoded && att.MediaType != gvproto.Attachment_VCARD
 	if !useDirectMedia {
 		data, mimeType, err = gc.Client.DownloadAttachment(ctx, att.ID, att.MediaType)
 		if err != nil {
@@ -594,7 +594,7 @@ func (gc *GVClient) convertMedia(ctx context.Context, portal *bridgev2.Portal, i
 		mimeType = http.DetectContentType(data)
 	}
 	origMeta := &gvproto.Attachment_Metadata{}
-	for _, meta := range att.Metadata {
+	for _, meta := range slices.Concat(att.Metadata, att.GetVideoInfo().GetMetadata()) {
 		if meta.Size == gvproto.Attachment_Metadata_ORIGINAL {
 			origMeta = meta
 			break
@@ -616,6 +616,9 @@ func (gc *GVClient) convertMedia(ctx context.Context, portal *bridgev2.Portal, i
 		msgtype = event.MsgFile
 	}
 	fileName := prefix + exmime.ExtensionFromMimetype(mimeType)
+	if att.MediaType == gvproto.Attachment_VCARD {
+		fileName = "contact.vcf"
+	}
 	if useDirectMedia {
 		mediaID := makeDirectMediaID(gc.UserLogin.ID, att.ID)
 		into.URL, into.File, err = portal.Bridge.GenerateContentURI(ctx, portal.MXID, mediaID)
@@ -633,6 +636,36 @@ func (gc *GVClient) convertMedia(ctx context.Context, portal *bridgev2.Portal, i
 		MimeType: mimeType,
 		Width:    int(origMeta.Width),
 		Height:   int(origMeta.Height),
+		Size:     len(data),
+	}
+	duration := att.GetAudioInfo().GetDuration()
+	if duration == nil {
+		duration = att.GetVideoInfo().GetDuration()
+	}
+	if duration != nil {
+		into.Info.Duration = int(duration.GetSeconds()*1000) + int(duration.GetNanos()/1e6)
+	}
+	if att.MediaType == gvproto.Attachment_VIDEO {
+		gc.addVideoThumbnail(ctx, portal, intent, att, into.Info)
+	}
+}
+
+func (gc *GVClient) addVideoThumbnail(ctx context.Context, portal *bridgev2.Portal, intent bridgev2.MatrixAPI, att *gvproto.Attachment, info *event.FileInfo) {
+	data, mimeType, err := gc.Client.DownloadVideoThumbnail(ctx, att.ID)
+	if err != nil {
+		zerolog.Ctx(ctx).Err(err).Msg("Failed to download video thumbnail")
+		return
+	}
+	if mimeType == "" {
+		mimeType = http.DetectContentType(data)
+	}
+	info.ThumbnailURL, info.ThumbnailFile, err = intent.UploadMedia(ctx, portal.MXID, data, "thumbnail"+exmime.ExtensionFromMimetype(mimeType), mimeType)
+	if err != nil {
+		zerolog.Ctx(ctx).Err(err).Msg("Failed to reupload video thumbnail")
+		return
+	}
+	info.ThumbnailInfo = &event.FileInfo{
+		MimeType: mimeType,
 		Size:     len(data),
 	}
 }
