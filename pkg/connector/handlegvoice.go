@@ -26,6 +26,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -49,6 +50,7 @@ const (
 	MinRefreshInterval        = 10 * time.Second
 	MinRefreshBurstCount      = 5
 	RefreshDelay              = 500 * time.Millisecond
+	ThreadSyncPageTimeout     = 1 * time.Minute
 )
 
 var _ bridgev2.BackfillingNetworkAPI = (*GVClient)(nil)
@@ -149,10 +151,10 @@ func (gc *GVClient) fetchNewMessages(ctx context.Context, targetThreadID string)
 			resp.Threads = append(resp.Threads, target.Thread)
 		}
 	}
-	return errors.Join(append(errs, gc.handleThreads(ctx, resp.Threads)...)...)
+	return errors.Join(append(errs, gc.handleThreads(ctx, resp.Threads, nil)...)...)
 }
 
-func (gc *GVClient) handleThreads(ctx context.Context, threads []*gvproto.Thread) (errs []error) {
+func (gc *GVClient) handleThreads(ctx context.Context, threads []*gvproto.Thread, trackResync func() func()) (errs []error) {
 threadLoop:
 	for _, thread := range threads {
 		if len(thread.Messages) == 0 {
@@ -177,11 +179,16 @@ threadLoop:
 				thread:   thread,
 				expected: config.Enabled && (config.MaxInitialMessages > 0 || config.MaxCatchupMessages > 0),
 			}
+			resyncDone := func() {}
+			if trackResync != nil {
+				resyncDone = trackResync()
+			}
 			result := gc.Main.Bridge.QueueRemoteEvent(gc.UserLogin, &simplevent.ChatResync{
 				EventMeta: simplevent.EventMeta{
-					Type:         bridgev2.RemoteEventChatResync,
-					PortalKey:    portalKey,
-					CreatePortal: true,
+					Type:           bridgev2.RemoteEventChatResync,
+					PortalKey:      portalKey,
+					CreatePortal:   true,
+					PostHandleFunc: func(context.Context, *bridgev2.Portal) { resyncDone() },
 				},
 				BundledBackfillData: backfill,
 				GetChatInfoFunc: func(ctx context.Context, portal *bridgev2.Portal) (*bridgev2.ChatInfo, error) {
@@ -201,6 +208,9 @@ threadLoop:
 					return backfill.expected, nil
 				},
 			})
+			if !result.Queued {
+				resyncDone()
+			}
 			if !result.Success || result.Error != nil {
 				errs = append(errs, fmt.Errorf("failed to resync chat %s: %w", thread.ID, result.Error))
 				continue
@@ -298,11 +308,20 @@ func (gc *GVClient) syncOlderThreads(ctx context.Context, firstPage *gvproto.Res
 			log.Err(err).Msg("Failed to list older threads")
 			return
 		}
+		resyncsDone := make(chan struct{}, len(page.Threads))
+		pendingResyncs := 0
+		trackResync := func() func() {
+			pendingResyncs++
+			return sync.OnceFunc(func() { resyncsDone <- struct{}{} })
+		}
 		gc.fetchEventsLock.Lock()
-		err = errors.Join(gc.handleThreads(ctx, page.Threads)...)
+		err = errors.Join(gc.handleThreads(ctx, page.Threads, trackResync)...)
 		gc.fetchEventsLock.Unlock()
 		if err != nil {
 			log.Err(err).Msg("Failed to sync some older threads")
+		}
+		if !gc.waitForThreadSyncPage(ctx, resyncsDone, pendingResyncs) {
+			return
 		}
 		meta.ThreadSyncCount += len(page.Threads)
 		meta.ThreadSyncToken = page.PaginationToken
@@ -320,6 +339,27 @@ func (gc *GVClient) syncOlderThreads(ctx context.Context, firstPage *gvproto.Res
 		log.Err(err).Msg("Failed to save thread sync completion")
 	}
 	log.Debug().Int("thread_count", meta.ThreadSyncCount).Msg("Finished syncing older threads")
+}
+
+func (gc *GVClient) waitForThreadSyncPage(ctx context.Context, resyncsDone <-chan struct{}, pending int) bool {
+	timeout := time.After(ThreadSyncPageTimeout)
+WaitLoop:
+	for ; pending > 0; pending-- {
+		select {
+		case <-resyncsDone:
+		case <-timeout:
+			zerolog.Ctx(ctx).Warn().Int("pending_resyncs", pending).Msg("Timed out waiting for older thread page to be handled")
+			break WaitLoop
+		case <-ctx.Done():
+			return false
+		}
+	}
+	select {
+	case <-time.After(gc.Main.Config.ThreadSyncPageDelay):
+		return true
+	case <-ctx.Done():
+		return false
+	}
 }
 
 func (gc *GVClient) isMessageBridged(ctx context.Context, msg *gvproto.Message) bool {
