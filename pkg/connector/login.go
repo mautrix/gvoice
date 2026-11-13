@@ -19,6 +19,7 @@ package connector
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"slices"
 
 	"github.com/rs/zerolog"
@@ -36,6 +37,12 @@ const (
 	LoginStepIDCookies  = "fi.mau.gvoice.cookies"
 	LoginStepIDComplete = "fi.mau.gvoice.complete"
 )
+
+var ErrLoginAccountNotFound = bridgev2.RespError{
+	ErrCode:    "FI.MAU.GVOICE.ACCOUNT_NOT_FOUND",
+	Err:        "Google Voice didn't find an account for this sign-in. Make sure you're signed in to voice.google.com with the Google account that has your Google Voice number, then try again.",
+	StatusCode: http.StatusBadRequest,
+}
 
 var loginFlows = []bridgev2.LoginFlow{{
 	Name:        "Cookies",
@@ -110,6 +117,9 @@ func (gl *GVLogin) SubmitCookies(ctx context.Context, cookies map[string]string)
 	acc, err := cli.GetAccount(ctx)
 	if err != nil {
 		zerolog.Ctx(ctx).Err(err).Msg("Failed to get account")
+		if libgv.IsNotFoundError(err) {
+			return nil, fmt.Errorf("%w: %w", ErrLoginAccountNotFound, err)
+		}
 		return nil, wrapRespError(err)
 	}
 	// TODO is google account email available somehow?
