@@ -95,6 +95,7 @@ func (c *Client) RunRealtimeChannel(ctx context.Context) error {
 	log := zerolog.Ctx(ctx)
 	var ackID uint64
 	failedRequests := 0
+	connected := false
 	for {
 		if time.Since(lastResubscribe) > ForceResubscribeInterval {
 			log.Debug().Msg("Forcing re-subscribe as channel has been alive for too long")
@@ -146,12 +147,13 @@ func (c *Client) RunRealtimeChannel(ctx context.Context) error {
 			}
 			return fmt.Errorf("failed to send channel request: %w", err)
 		}
-		if failedRequests != 0 || ackID == 0 {
+		if failedRequests != 0 || !connected {
 			log.Debug().
 				Int("failure_count", failedRequests).
 				Uint64("ack_id", ackID).
 				Msg("Realtime long polling connected, sending event")
 			c.dispatchEvent(ctx, &RealtimeConnected{})
+			connected = true
 		}
 		reader := utf16chunk.NewReader(resp.Body)
 	ReadLoop:
@@ -180,6 +182,7 @@ func (c *Client) RunRealtimeChannel(ctx context.Context) error {
 				log.Err(err).Msg("Failed to parse chunk into list")
 				break
 			}
+			reconnect := false
 			for i, entry := range entries {
 				if bytes.HasSuffix(entry, noopSuffix) {
 					var parsed gvproto.WebChannelNoopEvent
@@ -197,20 +200,24 @@ func (c *Client) RunRealtimeChannel(ctx context.Context) error {
 						return fmt.Errorf("failed to parse entry #%d: %w", i+1, err)
 					}
 					if len(parsed.GetDataWrapper()) == 1 && parsed.GetDataWrapper()[0].GetAltData().GetReconnect() {
-						_ = resp.Body.Close()
-						log.Debug().Msg("Got event that probably means we need to reconnect")
-						gSessionID, channel, err = c.SubscribeRealtimeChannel(ctx)
-						if err != nil {
-							return fmt.Errorf("failed to re-subscribe after timeout: %w", err)
-						}
-						lastResubscribe = time.Now()
-						ackID = 0
-						break ReadLoop
+						reconnect = true
+						continue
 					}
 					ackID = parsed.ArrayID
 					c.dispatchEvent(ctx, &RealtimeEvent{WebChannelEvent: &parsed})
 				}
 				failedRequests = 0
+			}
+			if reconnect {
+				_ = resp.Body.Close()
+				log.Debug().Msg("Got event that probably means we need to reconnect")
+				gSessionID, channel, err = c.SubscribeRealtimeChannel(ctx)
+				if err != nil {
+					return fmt.Errorf("failed to re-subscribe after timeout: %w", err)
+				}
+				lastResubscribe = time.Now()
+				ackID = 0
+				break ReadLoop
 			}
 		}
 	}
