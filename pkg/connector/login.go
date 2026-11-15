@@ -29,6 +29,7 @@ import (
 	"maunium.net/go/mautrix/bridgev2/status"
 
 	"go.mau.fi/mautrix-gvoice/pkg/libgv"
+	"go.mau.fi/mautrix-gvoice/pkg/libgv/gvproto"
 )
 
 const (
@@ -120,10 +121,19 @@ func (gl *GVLogin) SubmitCookies(ctx context.Context, cookies map[string]string)
 		return nil, wrapRespError(err)
 	}
 	if acc.GetAccount().GetPrimaryDestinationID() == "" {
+		voicePhones := 0
+		for _, phone := range acc.GetAccount().GetPhones() {
+			if phone.GetAccountPhone().GetBranding() == gvproto.AccountPhone_GOOGLE_VOICE {
+				voicePhones++
+			}
+		}
 		zerolog.Ctx(ctx).Warn().
 			Int("phone_count", len(acc.GetAccount().GetPhones())).
+			Int("voice_phone_count", voicePhones).
 			Msg("Google Voice account has no primary number")
-		return nil, ErrLoginNoVoiceNumber
+		if voicePhones == 0 {
+			return nil, ErrLoginNoVoiceNumber
+		}
 	}
 	// TODO is google account email available somehow?
 	loginID := networkid.UserLoginID(fmt.Sprintf("%s|%s", gl.User.MXID, acc.Account.PrimaryDestinationID))
