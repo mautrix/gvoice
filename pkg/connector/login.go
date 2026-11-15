@@ -19,6 +19,7 @@ package connector
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"slices"
 
 	"github.com/rs/zerolog"
@@ -36,6 +37,12 @@ const (
 	LoginStepIDCookies  = "fi.mau.gvoice.cookies"
 	LoginStepIDComplete = "fi.mau.gvoice.complete"
 )
+
+var ErrLoginNoVoiceNumber = bridgev2.RespError{
+	ErrCode:    "FI.MAU.GVOICE.NO_NUMBER",
+	Err:        "This Google account doesn't have a Google Voice number. Finish setting up Google Voice at voice.google.com, or sign in with the Google account that has your number, then try again.",
+	StatusCode: http.StatusBadRequest,
+}
 
 var loginFlows = []bridgev2.LoginFlow{{
 	Name:        "Cookies",
@@ -111,6 +118,12 @@ func (gl *GVLogin) SubmitCookies(ctx context.Context, cookies map[string]string)
 	if err != nil {
 		zerolog.Ctx(ctx).Err(err).Msg("Failed to get account")
 		return nil, wrapRespError(err)
+	}
+	if acc.GetAccount().GetPrimaryDestinationID() == "" {
+		zerolog.Ctx(ctx).Warn().
+			Int("phone_count", len(acc.GetAccount().GetPhones())).
+			Msg("Google Voice account has no primary number")
+		return nil, ErrLoginNoVoiceNumber
 	}
 	// TODO is google account email available somehow?
 	loginID := networkid.UserLoginID(fmt.Sprintf("%s|%s", gl.User.MXID, acc.Account.PrimaryDestinationID))
