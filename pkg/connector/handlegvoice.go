@@ -161,6 +161,7 @@ threadLoop:
 		lastMessageTS := time.UnixMilli(thread.Messages[0].Timestamp)
 		portalKey := gc.makeThreadPortalKey(thread)
 		prevMsg, ok := gc.lastEvents[thread.ID]
+		wasUnread := gc.unreadThreads[thread.ID]
 		if ok {
 			gc.syncDMBlock(ctx, portalKey, thread)
 		}
@@ -206,7 +207,7 @@ threadLoop:
 				continue
 			}
 			if result.Queued || backfill.completed {
-				gc.markThreadHandled(thread.ID, portalKey, lastMessageTS)
+				gc.markThreadHandled(thread, portalKey, lastMessageTS)
 				continue
 			}
 			if backfill.err != nil {
@@ -248,13 +249,25 @@ threadLoop:
 				continue threadLoop
 			}
 		}
-		gc.markThreadHandled(thread.ID, portalKey, lastMessageTS)
+		if wasUnread && thread.Read {
+			gc.Main.Bridge.QueueRemoteEvent(gc.UserLogin, &simplevent.Receipt{
+				EventMeta: simplevent.EventMeta{
+					Type:      bridgev2.RemoteEventReadReceipt,
+					PortalKey: portalKey,
+					Sender:    bridgev2.EventSender{IsFromMe: true},
+				},
+				LastTarget: networkid.MessageID(thread.Messages[0].ID),
+				ReadUpTo:   lastMessageTS,
+			})
+		}
+		gc.markThreadHandled(thread, portalKey, lastMessageTS)
 	}
 	return errs
 }
 
-func (gc *GVClient) markThreadHandled(threadID string, portalKey networkid.PortalKey, lastMessageTS time.Time) {
-	gc.lastEvents[threadID] = lastMessageTS
+func (gc *GVClient) markThreadHandled(thread *gvproto.Thread, portalKey networkid.PortalKey, lastMessageTS time.Time) {
+	gc.lastEvents[thread.ID] = lastMessageTS
+	gc.unreadThreads[thread.ID] = !thread.Read
 	if lastMessageTS.After(gc.portalLatest[portalKey]) {
 		gc.portalLatest[portalKey] = lastMessageTS
 	}
