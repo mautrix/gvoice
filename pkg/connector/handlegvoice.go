@@ -399,7 +399,10 @@ func (gc *GVClient) FetchMessages(ctx context.Context, params bridgev2.FetchMess
 		}
 		for len(messagesToConvert) < params.Count && paginationToken != "" {
 			resp, err := gc.Client.GetThread(ctx, threadID, 100, paginationToken)
-			if err != nil {
+			if thread == nil && libgv.IsNotFoundError(err) {
+				zerolog.Ctx(ctx).Debug().Str("thread_id", threadID).Msg("Thread not found on Google Voice, no older messages to backfill")
+				return &bridgev2.FetchMessagesResponse{}, nil
+			} else if err != nil {
 				return nil, fmt.Errorf("failed to fetch messages: %w", err)
 			}
 			thread = resp.Thread
@@ -523,12 +526,17 @@ func (gc *GVClient) convertGVTextOrMMSMessage(ctx context.Context, portal *bridg
 	}
 	content.MsgType = event.MsgText
 	if msg.MMS != nil {
+		text := strings.TrimRight(msg.MMS.Text, "\r\n")
 		if msg.MMS.Subject != "" {
-			content.Body = fmt.Sprintf("**%s**\n%s", msg.MMS.Subject, msg.MMS.Text)
-			content.FormattedBody = fmt.Sprintf("<strong>%s</strong><br>%s", msg.MMS.Subject, msg.MMS.Text)
+			content.Body = fmt.Sprintf("**%s**", msg.MMS.Subject)
+			content.FormattedBody = fmt.Sprintf("<strong>%s</strong>", event.TextToHTML(msg.MMS.Subject))
 			content.Format = event.FormatHTML
+			if text != "" {
+				content.Body += "\n" + text
+				content.FormattedBody += "<br>" + event.TextToHTML(text)
+			}
 		} else {
-			content.Body = msg.MMS.Text
+			content.Body = text
 		}
 		for i, att := range msg.MMS.Attachments {
 			if i == 0 {
@@ -663,6 +671,14 @@ func convertGVCallMessage(msg *gvproto.Message) *bridgev2.ConvertedMessage {
 			body = "Unanswered voice call"
 		default:
 			body = formatGVVoiceCallBody(msg.GetDurationSeconds())
+		}
+	case gvproto.Message_CALL_TYPE_RECORDED:
+		if msg.GetType() != gvproto.Message_RECORDED_CALL {
+			return nil
+		}
+		body = "Recorded voice call"
+		if duration := formatGVCallDuration(msg.GetDurationSeconds()); duration != "" {
+			body += " • " + duration
 		}
 	default:
 		return nil
