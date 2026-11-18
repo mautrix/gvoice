@@ -129,7 +129,7 @@ func IsAuthError(err error) bool {
 	return false
 }
 
-const MaxRetryCount = 10
+const MaxRetryCount = 2
 
 func (c *Client) MakeRequest(ctx context.Context, method, baseAddr string, query url.Values, headers http.Header, body any) (*http.Response, error) {
 	parsedAddr, err := url.Parse(baseAddr)
@@ -195,7 +195,7 @@ func (c *Client) MakeRequest(ctx context.Context, method, baseAddr string, query
 		if err != nil || resp.StatusCode >= 400 {
 			if (err != nil && !exhttp.IsNetworkError(err)) ||
 				(resp != nil && resp.StatusCode < 500) ||
-				retryCount > MaxRetryCount {
+				retryCount >= MaxRetryCount {
 				return nil, c.logRequestFail(ctx, parsedAddr, req, resp, err, retryCount, 0)
 			}
 			retryCount++
