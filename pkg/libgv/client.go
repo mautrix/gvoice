@@ -37,6 +37,8 @@ type Client struct {
 	HTTP     *http.Client
 	AuthUser string
 
+	lpHTTP *http.Client
+
 	EventHandler func(context.Context, any)
 
 	cookies     map[string]string
@@ -46,6 +48,7 @@ type Client struct {
 func NewClient(cookies map[string]string) *Client {
 	return &Client{
 		HTTP:     &http.Client{Timeout: 120 * time.Second},
+		lpHTTP:   &http.Client{Timeout: 5 * time.Minute},
 		cookies:  maps.Clone(cookies),
 		AuthUser: "0",
 	}
