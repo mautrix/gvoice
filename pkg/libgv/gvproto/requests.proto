@@ -76,6 +76,14 @@ message ReqDeleteThread {
     string threadID = 1;
 }
 
+message ReqDeleteMessages {
+    message MessageIDs {
+        repeated string IDs = 1;
+    }
+
+    MessageIDs messageIDs = 1;
+}
+
 message ReqAutocompleteContacts {
     int32 unknownInt1 = 1; // 243
     string query = 2;

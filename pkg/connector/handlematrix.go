@@ -28,6 +28,7 @@ import (
 	"maunium.net/go/mautrix/bridgev2"
 	"maunium.net/go/mautrix/bridgev2/database"
 	"maunium.net/go/mautrix/bridgev2/networkid"
+	"maunium.net/go/mautrix/bridgev2/simplevent"
 	"maunium.net/go/mautrix/event"
 
 	"go.mau.fi/mautrix-gvoice/pkg/libgv"
@@ -36,6 +37,7 @@ import (
 
 var (
 	_ bridgev2.ReadReceiptHandlingNetworkAPI = (*GVClient)(nil)
+	_ bridgev2.RedactionHandlingNetworkAPI   = (*GVClient)(nil)
 	_ bridgev2.DeleteChatHandlingNetworkAPI  = (*GVClient)(nil)
 	_ bridgev2.UserBlockingNetworkAPI        = (*GVClient)(nil)
 )
@@ -194,6 +196,28 @@ func (gc *GVClient) HandleMatrixReadReceipt(ctx context.Context, msg *bridgev2.M
 		}
 	}
 	return errors.Join(errs...)
+}
+
+func (gc *GVClient) HandleMatrixMessageRemove(ctx context.Context, msg *bridgev2.MatrixMessageRemove) error {
+	_, err := gc.Client.DeleteMessages(ctx, string(msg.TargetMessage.ID))
+	if err != nil {
+		return gc.wrapSendError(ctx, err)
+	}
+	parts, err := gc.Main.Bridge.DB.Message.GetAllPartsByID(ctx, msg.Portal.Receiver, msg.TargetMessage.ID)
+	if err != nil {
+		zerolog.Ctx(ctx).Err(err).Msg("Failed to get other parts of deleted message")
+	} else if len(parts) > 1 {
+		go gc.Main.Bridge.QueueRemoteEvent(gc.UserLogin, &simplevent.MessageRemove{
+			EventMeta: simplevent.EventMeta{
+				Type:      bridgev2.RemoteEventMessageRemove,
+				PortalKey: msg.Portal.PortalKey,
+				Sender:    bridgev2.EventSender{IsFromMe: true},
+			},
+			TargetMessage: msg.TargetMessage.ID,
+			OnlyForMe:     true,
+		})
+	}
+	return nil
 }
 
 func (gc *GVClient) HandleMatrixDeleteChat(ctx context.Context, chat *bridgev2.MatrixDeleteChat) error {
