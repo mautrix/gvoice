@@ -82,6 +82,15 @@ const DEBUG_MODE = process.env.MAUTRIX_GVOICE_ELECTRON_DEBUG === "true"
 
 const staticAllowedURLs = ["https://voice.google.com/", "https://voice.google.com/u/0/about", "https://voice.google.com/about"]
 
+// voice.google.com/about now 302s to workspace.google.com/products/voice/, which was not in the
+// list above — so the filter blocked the window's OWN navigation with ERR_BLOCKED_BY_CLIENT.
+// loadURL then rejected, "waiting_for_init" was never printed, and every later signature request
+// hit `!inited` and failed with "invalid init data", i.e. sending silently lost its WAA signature.
+// Allow top-level navigations anywhere under google.com so redirect changes can't break init again;
+// sub-resources stay restricted to the WAA script alone.
+const isGoogleHost = url => /^https:\/\/([a-z0-9-]+\.)*google\.com(\/|$)/.test(url)
+const isTopLevelNav = details => details.resourceType === "mainFrame"
+
 app.whenReady().then(() => {
 	window = new BrowserWindow({
 		width: 1280,
@@ -89,7 +98,9 @@ app.whenReady().then(() => {
 		show: DEBUG_MODE,
 	})
 	window.webContents.session.webRequest.onBeforeRequest((details, callback) => {
-		if (details.url === allowedScriptSource || staticAllowedURLs.includes(details.url) || details.url.startsWith("devtools://")) {
+		if (details.url === allowedScriptSource || staticAllowedURLs.includes(details.url)
+			|| (isTopLevelNav(details) && isGoogleHost(details.url))
+			|| details.url.startsWith("devtools://")) {
 			callback({cancel: false})
 		} else {
 			callback({cancel: true})
