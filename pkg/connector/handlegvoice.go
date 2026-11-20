@@ -417,9 +417,8 @@ func (gc *GVClient) FetchMessages(ctx context.Context, params bridgev2.FetchMess
 					zerolog.Ctx(ctx).Warn().
 						Int("text_count", len(ownThread.Messages)).
 						Int("call_count", len(messagesToConvert)).
-						Int("dropped_call_count", len(messagesToConvert)-i).
-						Msg("Too many texts to cover all calls in merged forward backfill, dropping older calls")
-					messagesToConvert = messagesToConvert[:i]
+						Int("calls_older_than_texts", len(messagesToConvert)-i).
+						Msg("Too many texts to cover all calls in merged forward backfill, older texts between calls won't be bridged")
 				}
 			}
 		}
