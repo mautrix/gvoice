@@ -22,6 +22,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"slices"
 	"strconv"
@@ -400,7 +401,11 @@ func (gc *GVClient) FetchMessages(ctx context.Context, params bridgev2.FetchMess
 			}
 		}
 		if threadID != string(params.Portal.ID) {
-			ownThread, err = gc.fetchOwnMessagesAfter(ctx, params.Portal, params.AnchorMessage, params.Count)
+			oldestCall := int64(math.MaxInt64)
+			if len(messagesToConvert) > 0 {
+				oldestCall = messagesToConvert[len(messagesToConvert)-1].Timestamp
+			}
+			ownThread, err = gc.fetchOwnMessagesAfter(ctx, params.Portal, params.AnchorMessage, oldestCall, params.Count)
 			if err != nil {
 				return nil, err
 			}
@@ -409,6 +414,11 @@ func (gc *GVClient) FetchMessages(ctx context.Context, params bridgev2.FetchMess
 				if i := slices.IndexFunc(messagesToConvert, func(msg *gvproto.Message) bool {
 					return msg.Timestamp < oldestOwn
 				}); i >= 0 {
+					zerolog.Ctx(ctx).Warn().
+						Int("text_count", len(ownThread.Messages)).
+						Int("call_count", len(messagesToConvert)).
+						Int("dropped_call_count", len(messagesToConvert)-i).
+						Msg("Too many texts to cover all calls in merged forward backfill, dropping older calls")
 					messagesToConvert = messagesToConvert[:i]
 				}
 			}
@@ -487,8 +497,11 @@ func (gc *GVClient) convertBackfillMessages(ctx context.Context, portal *bridgev
 	return convertedMessages
 }
 
-func (gc *GVClient) fetchOwnMessagesAfter(ctx context.Context, portal *bridgev2.Portal, anchor *database.Message, count int) (*gvproto.Thread, error) {
+const maxMergedOwnMessages = 500
+
+func (gc *GVClient) fetchOwnMessagesAfter(ctx context.Context, portal *bridgev2.Portal, anchor *database.Message, until int64, count int) (*gvproto.Thread, error) {
 	own := &gvproto.Thread{Read: true}
+	limit := max(count, maxMergedOwnMessages)
 	for {
 		resp, err := gc.Client.GetThread(ctx, string(portal.ID), 100, own.PaginationToken)
 		if libgv.IsNotFoundError(err) {
@@ -505,7 +518,8 @@ func (gc *GVClient) fetchOwnMessagesAfter(ctx context.Context, portal *bridgev2.
 			}
 			own.Messages = append(own.Messages, msg)
 		}
-		if own.PaginationToken == "" || len(own.Messages) >= count {
+		if own.PaginationToken == "" || len(own.Messages) >= limit ||
+			(len(own.Messages) >= count && own.Messages[len(own.Messages)-1].Timestamp <= until) {
 			return own, nil
 		}
 	}
