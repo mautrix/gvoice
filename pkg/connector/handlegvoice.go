@@ -464,7 +464,7 @@ func (gc *GVClient) getOldestOwnMessage(ctx context.Context, portal *bridgev2.Po
 	if oldest == nil || oldest.Metadata.(*MessageMetadata).ThreadID == "" {
 		return oldest, nil
 	}
-	var own *database.Message
+	own := oldest
 	err := gc.Main.Bridge.DB.Message.IterPortalMessages(ctx, portal.PortalKey).Iter(func(msg *database.Message) (bool, error) {
 		if msg.Metadata.(*MessageMetadata).ThreadID == "" {
 			own = msg
