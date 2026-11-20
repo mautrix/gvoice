@@ -22,6 +22,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"slices"
 	"strconv"
@@ -347,7 +348,7 @@ func (gc *GVClient) FetchMessages(ctx context.Context, params bridgev2.FetchMess
 	if params.Count <= 0 {
 		return nil, fmt.Errorf("count must be positive")
 	}
-	var thread *gvproto.Thread
+	var thread, ownThread *gvproto.Thread
 	var messagesToConvert []*gvproto.Message
 	var backfill *gvBackfillData
 	switch data := params.BundledData.(type) {
@@ -399,6 +400,28 @@ func (gc *GVClient) FetchMessages(ctx context.Context, params bridgev2.FetchMess
 				}
 			}
 		}
+		if threadID != string(params.Portal.ID) {
+			oldestCall := int64(math.MaxInt64)
+			if len(messagesToConvert) > 0 {
+				oldestCall = messagesToConvert[len(messagesToConvert)-1].Timestamp
+			}
+			ownThread, err = gc.fetchOwnMessagesAfter(ctx, params.Portal, params.AnchorMessage, oldestCall, params.Count)
+			if err != nil {
+				return nil, err
+			}
+			if ownThread.PaginationToken != "" && len(ownThread.Messages) > 0 {
+				oldestOwn := ownThread.Messages[len(ownThread.Messages)-1].Timestamp
+				if i := slices.IndexFunc(messagesToConvert, func(msg *gvproto.Message) bool {
+					return msg.Timestamp < oldestOwn
+				}); i >= 0 {
+					zerolog.Ctx(ctx).Warn().
+						Int("text_count", len(ownThread.Messages)).
+						Int("call_count", len(messagesToConvert)).
+						Int("calls_older_than_texts", len(messagesToConvert)-i).
+						Msg("Too many texts to cover all calls in merged forward backfill, older texts between calls won't be bridged")
+				}
+			}
+		}
 	} else {
 		paginationToken := string(params.Cursor)
 		if paginationToken == "" {
@@ -426,21 +449,15 @@ func (gc *GVClient) FetchMessages(ctx context.Context, params bridgev2.FetchMess
 			return nil, fmt.Errorf("unexpected state: no thread")
 		}
 	}
-	convertMessage := gc.makeMessageConverter(threadID)
-	convertedMessages := make([]*bridgev2.BackfillMessage, len(messagesToConvert))
-	for i, msg := range messagesToConvert {
-		ts, txnID, sender := gc.getMessageMeta(msg)
-		converted, _ := convertMessage(ctx, params.Portal, gc.Main.Bridge.Bot, msg)
-		convertedMessages[i] = &bridgev2.BackfillMessage{
-			ConvertedMessage: converted,
-			ID:               networkid.MessageID(msg.ID),
-			Sender:           sender,
-			TxnID:            txnID,
-			Timestamp:        ts,
-			StreamOrder:      msg.Timestamp,
-		}
+	convertedMessages := gc.convertBackfillMessages(ctx, params.Portal, threadID, messagesToConvert)
+	markRead := thread.Read
+	if ownThread != nil && len(ownThread.Messages) > 0 {
+		convertedMessages = append(convertedMessages, gc.convertBackfillMessages(ctx, params.Portal, string(params.Portal.ID), ownThread.Messages)...)
+		slices.SortStableFunc(convertedMessages, func(a, b *bridgev2.BackfillMessage) int {
+			return a.Timestamp.Compare(b.Timestamp)
+		})
+		markRead = markRead && ownThread.Read
 	}
-	slices.Reverse(convertedMessages)
 	var completeCallback func()
 	if backfill != nil {
 		completeCallback = func() { backfill.completed = true }
@@ -453,18 +470,65 @@ func (gc *GVClient) FetchMessages(ctx context.Context, params bridgev2.FetchMess
 		Messages:         convertedMessages,
 		Cursor:           cursor,
 		HasMore:          thread.PaginationToken != "",
-		MarkRead:         thread.Read,
+		MarkRead:         markRead,
 		CompleteCallback: completeCallback,
 		// Merged threads may contain calls that were already bridged into their own portal
 		AggressiveDeduplication: threadID != string(params.Portal.ID),
 	}, nil
 }
 
+func (gc *GVClient) convertBackfillMessages(ctx context.Context, portal *bridgev2.Portal, threadID string, messages []*gvproto.Message) []*bridgev2.BackfillMessage {
+	convertMessage := gc.makeMessageConverter(threadID)
+	convertedMessages := make([]*bridgev2.BackfillMessage, len(messages))
+	for i, msg := range messages {
+		ts, txnID, sender := gc.getMessageMeta(msg)
+		converted, _ := convertMessage(ctx, portal, gc.Main.Bridge.Bot, msg)
+		convertedMessages[i] = &bridgev2.BackfillMessage{
+			ConvertedMessage: converted,
+			ID:               networkid.MessageID(msg.ID),
+			Sender:           sender,
+			TxnID:            txnID,
+			Timestamp:        ts,
+			StreamOrder:      msg.Timestamp,
+		}
+	}
+	slices.Reverse(convertedMessages)
+	return convertedMessages
+}
+
+const maxMergedOwnMessages = 500
+
+func (gc *GVClient) fetchOwnMessagesAfter(ctx context.Context, portal *bridgev2.Portal, anchor *database.Message, until int64, count int) (*gvproto.Thread, error) {
+	own := &gvproto.Thread{Read: true}
+	limit := max(count, maxMergedOwnMessages)
+	for {
+		resp, err := gc.Client.GetThread(ctx, string(portal.ID), 100, own.PaginationToken)
+		if libgv.IsNotFoundError(err) {
+			return &gvproto.Thread{Read: true}, nil
+		} else if err != nil {
+			return nil, fmt.Errorf("failed to fetch messages of portal thread: %w", err)
+		}
+		own.Read = own.Read && resp.GetThread().GetRead()
+		own.PaginationToken = resp.GetThread().GetPaginationToken()
+		for _, msg := range resp.GetThread().GetMessages() {
+			if anchor != nil && (networkid.MessageID(msg.ID) == anchor.ID || !time.UnixMilli(msg.Timestamp).After(anchor.Timestamp)) {
+				own.PaginationToken = ""
+				return own, nil
+			}
+			own.Messages = append(own.Messages, msg)
+		}
+		if own.PaginationToken == "" || len(own.Messages) >= limit ||
+			(len(own.Messages) >= count && own.Messages[len(own.Messages)-1].Timestamp <= until) {
+			return own, nil
+		}
+	}
+}
+
 func (gc *GVClient) getOldestOwnMessage(ctx context.Context, portal *bridgev2.Portal, oldest *database.Message) (*database.Message, error) {
 	if oldest == nil || oldest.Metadata.(*MessageMetadata).ThreadID == "" {
 		return oldest, nil
 	}
-	var own *database.Message
+	own := oldest
 	err := gc.Main.Bridge.DB.Message.IterPortalMessages(ctx, portal.PortalKey).Iter(func(msg *database.Message) (bool, error) {
 		if msg.Metadata.(*MessageMetadata).ThreadID == "" {
 			own = msg
