@@ -18,6 +18,7 @@ package connector
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"slices"
@@ -42,6 +43,12 @@ const (
 var ErrLoginNoVoiceNumber = bridgev2.RespError{
 	ErrCode:    "FI.MAU.GVOICE.NO_NUMBER",
 	Err:        "This Google account doesn't have a Google Voice number. Finish setting up Google Voice at voice.google.com, or sign in with the Google account that has your number, then try again.",
+	StatusCode: http.StatusBadRequest,
+}
+
+var ErrLoginNoVoiceAccount = bridgev2.RespError{
+	ErrCode:    "FI.MAU.GVOICE.NO_ACCOUNT",
+	Err:        "This account does not have Google Voice. Sign in with a Google account that has a US Google Voice number, or use Google Chat instead.",
 	StatusCode: http.StatusBadRequest,
 }
 
@@ -117,6 +124,13 @@ func (gl *GVLogin) SubmitCookies(ctx context.Context, cookies map[string]string)
 	cli := libgv.NewClient(cookies)
 	acc, err := cli.GetAccount(ctx)
 	if err != nil {
+		var respErr *libgv.ResponseError
+		if errors.As(err, &respErr) && respErr.Resp.StatusCode == http.StatusNotFound {
+			zerolog.Ctx(ctx).Warn().Err(err).
+				Bytes("response_data", respErr.Body).
+				Msg("Google account doesn't have Google Voice")
+			return nil, fmt.Errorf("%w: %w", ErrLoginNoVoiceAccount, err)
+		}
 		zerolog.Ctx(ctx).Err(err).Msg("Failed to get account")
 		return nil, wrapRespError(err)
 	}
