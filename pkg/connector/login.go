@@ -126,8 +126,8 @@ func (gl *GVLogin) SubmitCookies(ctx context.Context, cookies map[string]string)
 	if err != nil {
 		var respErr *libgv.ResponseError
 		if errors.As(err, &respErr) && respErr.Resp.StatusCode == http.StatusNotFound {
-			zerolog.Ctx(ctx).Warn().
-				Bytes("response_body", respErr.Body).
+			zerolog.Ctx(ctx).Warn().Err(err).
+				Bytes("response_data", respErr.Body).
 				Msg("Google account doesn't have Google Voice")
 			return nil, fmt.Errorf("%w: %w", ErrLoginNoVoiceAccount, err)
 		}
