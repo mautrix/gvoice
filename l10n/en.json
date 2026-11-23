@@ -1,0 +1,25 @@
+{
+	"namespace": "mautrix-gvoice",
+	"messages": [
+		{
+			"key": "mautrix-gvoice:login.flow.cookies.description",
+			"english": "Log in with your Google account by providing cookies from voice.google.com"
+		},
+		{
+			"key": "mautrix-gvoice:login.flow.cookies.name",
+			"english": "Cookies"
+		},
+		{
+			"key": "mautrix-gvoice:login.step.complete.instructions",
+			"english": "Successfully logged in as {number}",
+			"params": [
+				"number"
+			],
+			"comment": "number is the Google Voice phone number of the logged-in account"
+		},
+		{
+			"key": "mautrix-gvoice:login.step.cookies.instructions",
+			"english": "Enter a JSON object with your cookies, or a cURL command copied from browser devtools."
+		}
+	]
+}
