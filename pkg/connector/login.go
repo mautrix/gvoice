@@ -45,6 +45,12 @@ var ErrLoginNoVoiceNumber = bridgev2.RespError{
 	StatusCode: http.StatusBadRequest,
 }
 
+var ErrLoginAccountNotFound = bridgev2.RespError{
+	ErrCode:    "FI.MAU.GVOICE.ACCOUNT_NOT_FOUND",
+	Err:        "Google Voice didn't find an account for this sign-in. Make sure you're signed in to voice.google.com with the Google account that has your Google Voice number, then try again.",
+	StatusCode: http.StatusBadRequest,
+}
+
 var loginFlows = []bridgev2.LoginFlow{{
 	Name:        "Cookies",
 	Description: "Log in with your Google account by providing cookies from voice.google.com",
@@ -118,6 +124,9 @@ func (gl *GVLogin) SubmitCookies(ctx context.Context, cookies map[string]string)
 	acc, err := cli.GetAccount(ctx)
 	if err != nil {
 		zerolog.Ctx(ctx).Err(err).Msg("Failed to get account")
+		if libgv.IsNotFoundError(err) {
+			return nil, fmt.Errorf("%w: %w", ErrLoginAccountNotFound, err)
+		}
 		return nil, wrapRespError(err)
 	}
 	if acc.GetAccount().GetPrimaryDestinationID() == "" {
