@@ -19,15 +19,18 @@ package connector
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"slices"
 
 	"github.com/rs/zerolog"
+	"go.mau.fi/util/l10n"
 	"maunium.net/go/mautrix/bridgev2"
 	"maunium.net/go/mautrix/bridgev2/database"
 	"maunium.net/go/mautrix/bridgev2/networkid"
 	"maunium.net/go/mautrix/bridgev2/status"
 
 	"go.mau.fi/mautrix-gvoice/pkg/libgv"
+	"go.mau.fi/mautrix-gvoice/pkg/libgv/gvproto"
 )
 
 const (
@@ -37,9 +40,21 @@ const (
 	LoginStepIDComplete = "fi.mau.gvoice.complete"
 )
 
+var ErrLoginNoVoiceNumber = bridgev2.RespError{
+	ErrCode:    "FI.MAU.GVOICE.NO_NUMBER",
+	Err:        "This Google account doesn't have a Google Voice number. Finish setting up Google Voice at voice.google.com, or sign in with the Google account that has your number, then try again.",
+	StatusCode: http.StatusBadRequest,
+}
+
+var ErrLoginAccountNotFound = bridgev2.RespError{
+	ErrCode:    "FI.MAU.GVOICE.ACCOUNT_NOT_FOUND",
+	Err:        "Google Voice didn't find an account for this sign-in. Make sure you're signed in to voice.google.com with the Google account that has your Google Voice number, then try again.",
+	StatusCode: http.StatusBadRequest,
+}
+
 var loginFlows = []bridgev2.LoginFlow{{
-	Name:        "Cookies",
-	Description: "Log in with your Google account by providing cookies from voice.google.com",
+	Name:        msgFlowCookiesName.Message(),
+	Description: msgFlowCookiesDescription.Message(),
 	ID:          LoginFlowIDCookies,
 }}
 
@@ -64,7 +79,7 @@ var _ bridgev2.LoginProcessCookies = (*GVLogin)(nil)
 var cookieLoginStep = &bridgev2.LoginStep{
 	Type:         bridgev2.LoginStepTypeCookies,
 	StepID:       LoginStepIDCookies,
-	Instructions: "Enter a JSON object with your cookies, or a cURL command copied from browser devtools.",
+	Instructions: msgStepCookiesInstructions.Message(),
 	CookiesParams: &bridgev2.LoginCookiesParams{
 		URL:    "https://voice.google.com/signup",
 		Fields: []bridgev2.LoginCookieField{},
@@ -110,7 +125,25 @@ func (gl *GVLogin) SubmitCookies(ctx context.Context, cookies map[string]string)
 	acc, err := cli.GetAccount(ctx)
 	if err != nil {
 		zerolog.Ctx(ctx).Err(err).Msg("Failed to get account")
+		if libgv.IsNotFoundError(err) {
+			return nil, fmt.Errorf("%w: %w", ErrLoginAccountNotFound, err)
+		}
 		return nil, wrapRespError(err)
+	}
+	if acc.GetAccount().GetPrimaryDestinationID() == "" {
+		voicePhones := 0
+		for _, phone := range acc.GetAccount().GetPhones() {
+			if phone.GetAccountPhone().GetBranding() == gvproto.AccountPhone_GOOGLE_VOICE {
+				voicePhones++
+			}
+		}
+		zerolog.Ctx(ctx).Warn().
+			Int("phone_count", len(acc.GetAccount().GetPhones())).
+			Int("voice_phone_count", voicePhones).
+			Msg("Google Voice account has no primary number")
+		if voicePhones == 0 {
+			return nil, ErrLoginNoVoiceNumber
+		}
 	}
 	// TODO is google account email available somehow?
 	loginID := networkid.UserLoginID(fmt.Sprintf("%s|%s", gl.User.MXID, acc.Account.PrimaryDestinationID))
@@ -139,7 +172,7 @@ func (gl *GVLogin) SubmitCookies(ctx context.Context, cookies map[string]string)
 	return &bridgev2.LoginStep{
 		Type:         bridgev2.LoginStepTypeComplete,
 		StepID:       LoginStepIDComplete,
-		Instructions: fmt.Sprintf("Successfully logged in as %s", acc.Account.PrimaryDestinationID),
+		Instructions: msgStepCompleteInstructions.Render(l10n.Params{"number": acc.Account.PrimaryDestinationID}),
 		CompleteParams: &bridgev2.LoginCompleteParams{
 			UserLoginID: ul.ID,
 			UserLogin:   ul,

@@ -39,6 +39,7 @@ const (
 	ContentTypePBLite    = "application/json+protobuf"
 	ContentTypeFormData  = "application/x-www-form-urlencoded"
 	ContentTypePlainText = "text/plain"
+	ContentTypeJSON      = "application/json"
 )
 
 const (
@@ -56,6 +57,7 @@ const (
 	ContactsDomain = "peoplestack-pa." + APIDomain
 	UploadDomain   = "docs.google.com"
 	WaaDomain      = "waa-pa." + APIDomain
+	AccountsDomain = "accounts.google.com"
 
 	APIBaseURL                    = "https://" + APIDomain + "/voice/v1/voiceclient"
 	EndpointGetAccount            = APIBaseURL + "/account/get"
@@ -73,8 +75,10 @@ const (
 	EndpointRealtimeChannel      = RealtimeBaseURL + "/punctual/multi-watch/channel"
 	EndpointRealtimeChooseServer = RealtimeBaseURL + "/punctual/v1/chooseServer"
 
-	EndpointUpload           = "https://" + UploadDomain + "/upload/photos/resumable"
-	EndpointDownloadTemplate = "https://voice.google.com/u/%s/a/i/%s"
+	EndpointUpload                = "https://" + UploadDomain + "/upload/photos/resumable"
+	EndpointDownloadTemplate      = "https://voice.google.com/u/%s/a/i/%s"
+	EndpointDownloadVideoTemplate = "https://voice.google.com/u/%s/a/vi/%s"
+	EndpointDownloadAudioTemplate = "https://voice.google.com/u/%s/a/au/%s"
 
 	ContactsBaseURL              = "https://" + ContactsDomain + "/$rpc/peoplestack.PeopleStackAutocompleteService"
 	EndpointAutocompleteContacts = ContactsBaseURL + "/Autocomplete"
@@ -83,4 +87,7 @@ const (
 	WaaBaseURL        = "https://" + WaaDomain + "/$rpc/google.internal.waa.v1.Waa"
 	EndpointCreateWaa = WaaBaseURL + "/Create"
 	EndpointPingWaa   = WaaBaseURL + "/Ping"
+
+	EndpointRotateCookies = "https://" + AccountsDomain + "/RotateCookies"
+	RotateCookiesReferer  = "https://" + AccountsDomain + "/RotateCookiesPage?og_pid=72&rot=3&origin=https%3A%2F%2Fvoice.google.com&exp_id=0"
 )
