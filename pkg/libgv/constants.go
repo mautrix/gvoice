@@ -21,10 +21,10 @@ import (
 	"strings"
 )
 
-const UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36"
-const CHUserAgent = `"Not:A-Brand";v="8", "Chromium";v="156", "Google Chrome";v="156"`
+const UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36"
+const CHUserAgent = `"Not-A.Brand";v="99", "Google Chrome";v="157", "Chromium";v="157"`
 const CHPlatform = `"Linux"`
-const ClientVersion = "1016040151"
+const ClientVersion = "1024675141"
 const JavaScriptUserAgent = "google-api-javascript-client/1.1.0"
 const WaaXUserAgent = "grpc-web-javascript/0.1"
 
