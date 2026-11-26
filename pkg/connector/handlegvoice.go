@@ -669,7 +669,7 @@ func (gc *GVClient) convertMedia(ctx context.Context, portal *bridgev2.Portal, i
 		duration = att.GetVideoInfo().GetDuration()
 	}
 	if duration != nil {
-		into.Info.Duration = int(duration.GetSeconds()*1000) + int(duration.GetNanos()/1e6)
+		into.Info.Duration = int(time.Unix(duration.GetSeconds(), int64(duration.GetNanos())).UnixMilli())
 	}
 }
 
