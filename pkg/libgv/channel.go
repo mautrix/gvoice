@@ -112,6 +112,7 @@ func (c *Client) RunRealtimeChannel(ctx context.Context) error {
 			}
 			lastResubscribe = time.Now()
 			ackID = 0
+			connected = lastHeartbeat != 0
 		}
 		query := url.Values{
 			"VER":        {"8"},
@@ -231,6 +232,7 @@ func (c *Client) RunRealtimeChannel(ctx context.Context) error {
 				}
 				lastResubscribe = time.Now()
 				ackID = 0
+				connected = lastHeartbeat != 0
 				break ReadLoop
 			}
 		}
