@@ -29,6 +29,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/emersion/go-vcard"
 	"github.com/rs/zerolog"
 	"go.mau.fi/util/exfmt"
 	"go.mau.fi/util/exmime"
@@ -639,6 +640,10 @@ func (gc *GVClient) convertMedia(ctx context.Context, portal *bridgev2.Portal, i
 	fileName := prefix + exmime.ExtensionFromMimetype(mimeType)
 	if att.MediaType == gvproto.Attachment_VCARD {
 		fileName = "contact.vcf"
+		card, err := vcard.NewDecoder(bytes.NewReader(data)).Decode()
+		if name := card.PreferredValue(vcard.FieldFormattedName); err == nil && name != "" {
+			fileName = name + ".vcf"
+		}
 	}
 	if useDirectMedia {
 		mediaID := makeDirectMediaID(gc.UserLogin.ID, att.ID)
@@ -665,29 +670,6 @@ func (gc *GVClient) convertMedia(ctx context.Context, portal *bridgev2.Portal, i
 	}
 	if duration != nil {
 		into.Info.Duration = int(duration.GetSeconds()*1000) + int(duration.GetNanos()/1e6)
-	}
-	if att.MediaType == gvproto.Attachment_VIDEO {
-		gc.addVideoThumbnail(ctx, portal, intent, att, into.Info)
-	}
-}
-
-func (gc *GVClient) addVideoThumbnail(ctx context.Context, portal *bridgev2.Portal, intent bridgev2.MatrixAPI, att *gvproto.Attachment, info *event.FileInfo) {
-	data, mimeType, err := gc.Client.DownloadVideoThumbnail(ctx, att.ID)
-	if err != nil {
-		zerolog.Ctx(ctx).Err(err).Msg("Failed to download video thumbnail")
-		return
-	}
-	if mimeType == "" {
-		mimeType = http.DetectContentType(data)
-	}
-	info.ThumbnailURL, info.ThumbnailFile, err = intent.UploadMedia(ctx, portal.MXID, data, "thumbnail"+exmime.ExtensionFromMimetype(mimeType), mimeType)
-	if err != nil {
-		zerolog.Ctx(ctx).Err(err).Msg("Failed to reupload video thumbnail")
-		return
-	}
-	info.ThumbnailInfo = &event.FileInfo{
-		MimeType: mimeType,
-		Size:     len(data),
 	}
 }
 

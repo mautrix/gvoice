@@ -214,20 +214,6 @@ func (c *Client) DownloadAttachment(ctx context.Context, mediaID string, mediaTy
 	return
 }
 
-func (c *Client) DownloadVideoThumbnail(ctx context.Context, mediaID string) (data []byte, mime string, err error) {
-	var resp *http.Response
-	resp, err = c.MakeRequest(ctx, http.MethodGet, fmt.Sprintf(EndpointDownloadVideoTemplate, c.AuthUser, mediaID), url.Values{
-		"m": {"thumbnail"},
-	}, nil, nil)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-	mime = resp.Header.Get("Content-Type")
-	data, err = io.ReadAll(resp.Body)
-	return
-}
-
 func (c *Client) DownloadVoicemail(ctx context.Context, messageID string) (data []byte, mime string, err error) {
 	var resp *http.Response
 	resp, err = c.MakeRequest(ctx, http.MethodGet, fmt.Sprintf(EndpointDownloadVoicemailTemplate, c.AuthUser, messageID), nil, nil, nil)
