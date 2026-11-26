@@ -161,6 +161,7 @@ threadLoop:
 		lastMessageTS := time.UnixMilli(thread.Messages[0].Timestamp)
 		portalKey := gc.makeThreadPortalKey(thread)
 		prevMsg, ok := gc.lastEvents[thread.ID]
+		wasUnread := gc.unreadThreads[thread.ID]
 		if ok {
 			gc.syncDMBlock(ctx, portalKey, thread)
 		}
@@ -206,7 +207,7 @@ threadLoop:
 				continue
 			}
 			if result.Queued || backfill.completed {
-				gc.markThreadHandled(thread.ID, portalKey, lastMessageTS)
+				gc.markThreadHandled(thread, portalKey, lastMessageTS)
 				continue
 			}
 			if backfill.err != nil {
@@ -248,13 +249,25 @@ threadLoop:
 				continue threadLoop
 			}
 		}
-		gc.markThreadHandled(thread.ID, portalKey, lastMessageTS)
+		if wasUnread && thread.Read {
+			gc.Main.Bridge.QueueRemoteEvent(gc.UserLogin, &simplevent.Receipt{
+				EventMeta: simplevent.EventMeta{
+					Type:      bridgev2.RemoteEventReadReceipt,
+					PortalKey: portalKey,
+					Sender:    bridgev2.EventSender{IsFromMe: true},
+				},
+				LastTarget: networkid.MessageID(thread.Messages[0].ID),
+				ReadUpTo:   lastMessageTS,
+			})
+		}
+		gc.markThreadHandled(thread, portalKey, lastMessageTS)
 	}
 	return errs
 }
 
-func (gc *GVClient) markThreadHandled(threadID string, portalKey networkid.PortalKey, lastMessageTS time.Time) {
-	gc.lastEvents[threadID] = lastMessageTS
+func (gc *GVClient) markThreadHandled(thread *gvproto.Thread, portalKey networkid.PortalKey, lastMessageTS time.Time) {
+	gc.lastEvents[thread.ID] = lastMessageTS
+	gc.unreadThreads[thread.ID] = !thread.Read
 	if lastMessageTS.After(gc.portalLatest[portalKey]) {
 		gc.portalLatest[portalKey] = lastMessageTS
 	}
@@ -399,7 +412,10 @@ func (gc *GVClient) FetchMessages(ctx context.Context, params bridgev2.FetchMess
 		}
 		for len(messagesToConvert) < params.Count && paginationToken != "" {
 			resp, err := gc.Client.GetThread(ctx, threadID, 100, paginationToken)
-			if err != nil {
+			if thread == nil && libgv.IsNotFoundError(err) {
+				zerolog.Ctx(ctx).Debug().Str("thread_id", threadID).Msg("Thread not found on Google Voice, no older messages to backfill")
+				return &bridgev2.FetchMessagesResponse{}, nil
+			} else if err != nil {
 				return nil, fmt.Errorf("failed to fetch messages: %w", err)
 			}
 			thread = resp.Thread
@@ -492,8 +508,11 @@ func (gc *GVClient) makeMessageConverter(threadID string) func(context.Context, 
 }
 
 func (gc *GVClient) convertMessage(ctx context.Context, portal *bridgev2.Portal, intent bridgev2.MatrixAPI, msg *gvproto.Message) (*bridgev2.ConvertedMessage, error) {
+	if converted := convertGVVoicemailMessage(msg); converted != nil {
+		gc.addVoicemailAudio(ctx, portal, intent, msg, converted.Parts[0].Content)
+		return converted, nil
+	}
 	for _, converted := range []*bridgev2.ConvertedMessage{
-		convertGVVoicemailMessage(msg),
 		convertGVCallMessage(msg),
 		convertGVMissedCallMessage(msg),
 	} {
@@ -523,12 +542,17 @@ func (gc *GVClient) convertGVTextOrMMSMessage(ctx context.Context, portal *bridg
 	}
 	content.MsgType = event.MsgText
 	if msg.MMS != nil {
+		text := strings.TrimRight(msg.MMS.Text, "\r\n")
 		if msg.MMS.Subject != "" {
-			content.Body = fmt.Sprintf("**%s**\n%s", msg.MMS.Subject, msg.MMS.Text)
-			content.FormattedBody = fmt.Sprintf("<strong>%s</strong><br>%s", msg.MMS.Subject, msg.MMS.Text)
+			content.Body = fmt.Sprintf("**%s**", msg.MMS.Subject)
+			content.FormattedBody = fmt.Sprintf("<strong>%s</strong>", event.TextToHTML(msg.MMS.Subject))
 			content.Format = event.FormatHTML
+			if text != "" {
+				content.Body += "\n" + text
+				content.FormattedBody += "<br>" + event.TextToHTML(text)
+			}
 		} else {
-			content.Body = msg.MMS.Text
+			content.Body = text
 		}
 		for i, att := range msg.MMS.Attachments {
 			if i == 0 {
@@ -697,6 +721,14 @@ func convertGVCallMessage(msg *gvproto.Message) *bridgev2.ConvertedMessage {
 		default:
 			body = formatGVVoiceCallBody(msg.GetDurationSeconds())
 		}
+	case gvproto.Message_CALL_TYPE_RECORDED:
+		if msg.GetType() != gvproto.Message_RECORDED_CALL {
+			return nil
+		}
+		body = "Recorded voice call"
+		if duration := formatGVCallDuration(msg.GetDurationSeconds()); duration != "" {
+			body += " • " + duration
+		}
 	default:
 		return nil
 	}
@@ -779,6 +811,36 @@ func convertGVVoicemailMessage(msg *gvproto.Message) *bridgev2.ConvertedMessage 
 			},
 		}},
 	}
+}
+
+func (gc *GVClient) addVoicemailAudio(ctx context.Context, portal *bridgev2.Portal, intent bridgev2.MatrixAPI, msg *gvproto.Message, into *event.MessageEventContent) {
+	data, mimeType, err := gc.Client.DownloadVoicemail(ctx, msg.GetID())
+	if err != nil {
+		zerolog.Ctx(ctx).Err(err).Msg("Failed to download voicemail audio")
+		return
+	}
+	if mimeType == "" {
+		mimeType = http.DetectContentType(data)
+	}
+	if !strings.HasPrefix(mimeType, "audio/") {
+		zerolog.Ctx(ctx).Warn().Str("mime_type", mimeType).Msg("Voicemail download didn't return audio")
+		return
+	}
+	fileName := "voicemail" + exmime.ExtensionFromMimetype(mimeType)
+	into.URL, into.File, err = intent.UploadMedia(ctx, portal.MXID, data, fileName, mimeType)
+	if err != nil {
+		zerolog.Ctx(ctx).Err(err).Msg("Failed to reupload voicemail audio")
+		return
+	}
+	durationMS := int(msg.GetDurationSeconds() * 1000)
+	into.MsgType = event.MsgAudio
+	into.FileName = fileName
+	into.Info = &event.FileInfo{
+		MimeType: mimeType,
+		Size:     len(data),
+		Duration: durationMS,
+	}
+	into.MSC1767Audio = &event.MSC1767Audio{Duration: durationMS}
 }
 
 func buildGVVoicemailTranscript(transcript *gvproto.Message_Transcript) string {

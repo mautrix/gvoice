@@ -45,6 +45,7 @@ message Message {
         MISSED_CALL = 0;
         INCOMING_CALL = 1;
         VOICEMAIL = 2;
+        RECORDED_CALL = 4;
         OUTGOING_CALL = 7;
         SMS_IN = 10;
         SMS_OUT = 11;
@@ -55,6 +56,7 @@ message Message {
         CALL_TYPE_INCOMING = 1;
         CALL_TYPE_OUTGOING = 2;
         CALL_TYPE_VOICEMAIL = 3;
+        CALL_TYPE_RECORDED = 4;
         CALL_TYPE_SMS_IN = 5;
         CALL_TYPE_SMS_OUT = 6;
     }
