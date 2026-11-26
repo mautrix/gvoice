@@ -27,11 +27,13 @@ import (
 	"maunium.net/go/mautrix/event"
 
 	"go.mau.fi/mautrix-gvoice/pkg/libgv"
+	"go.mau.fi/mautrix-gvoice/pkg/libgv/gvproto"
 )
 
 func isRateLimitError(err error) bool {
 	var respErr *libgv.ResponseError
-	return errors.As(err, &respErr) && respErr.Resp != nil && respErr.Resp.StatusCode == http.StatusTooManyRequests
+	return errors.As(err, &respErr) && respErr.Resp != nil &&
+		(respErr.Resp.StatusCode == http.StatusTooManyRequests || respErr.VoiceError.GetCode() == gvproto.VoiceError_TOO_MANY_MESSAGES)
 }
 
 // wrapSendError turns an error from a Google Voice request made in a Matrix event handler into a message status,
@@ -48,7 +50,7 @@ func (gc *GVClient) wrapSendError(ctx context.Context, err error) error {
 			WithSendNotice(true)
 	}
 	switch code := respErr.Resp.StatusCode; {
-	case code == http.StatusTooManyRequests:
+	case isRateLimitError(err):
 		return bridgev2.WrapErrorInStatus(err).
 			WithMessage("Google Voice is rate limiting you, try again in a few minutes").
 			WithErrorReason(event.MessageStatusNetworkError).
@@ -68,14 +70,25 @@ func (gc *GVClient) wrapSendError(ctx context.Context, err error) error {
 			WithStatus(event.MessageStatusFail).
 			WithIsCertain(true).
 			WithSendNotice(true)
+	case respErr.VoiceError.GetCode() == gvproto.VoiceError_FILE_TOO_LARGE:
+		return bridgev2.WrapErrorInStatus(err).
+			WithMessage("file is too large for Google Voice").
+			WithErrorReason(event.MessageStatusUnsupported).
+			WithStatus(event.MessageStatusFail).
+			WithIsCertain(true).
+			WithSendNotice(true)
 	case code == http.StatusRequestTimeout:
 		return bridgev2.WrapErrorInStatus(err).
 			WithMessage("Google Voice timed out").
 			WithErrorReason(event.MessageStatusNetworkError).
 			WithSendNotice(true)
 	case code >= 400 && code < 500:
+		msg := "Google Voice rejected the request"
+		if respErr.VoiceError != nil {
+			msg = fmt.Sprintf("%s (error %d)", msg, respErr.VoiceError.GetCode())
+		}
 		return bridgev2.WrapErrorInStatus(err).
-			WithMessage("Google Voice rejected the request").
+			WithMessage(msg).
 			WithErrorReason(event.MessageStatusNetworkError).
 			WithStatus(event.MessageStatusFail).
 			WithIsCertain(true).

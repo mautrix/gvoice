@@ -1,3 +1,18 @@
+# v26.11
+
+* Bumped minimum Go version to 1.26.
+* Updated Docker image to Alpine 3.24.
+* Added chat merging for call/voicemail chats and the main SMS chat.
+* Added support for sending gifs.
+* Added support for starting chats with phone numbers.
+* Added option to sync all existing chats on login.
+* Added support for blocking and reporting spam.
+* Added support for registering push notifications via FCM.
+* Added support for direct media.
+* Changed login to refuse with a clear error if the Google account doesn't have
+  Google Voice set up.
+* Fixed bridging voicemails with no transcript.
+
 # v26.05
 
 * Fixed parsing error when receiving data from Google Voice.
