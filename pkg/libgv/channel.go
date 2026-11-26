@@ -39,7 +39,15 @@ import (
 
 const reqChooseServer = `[[null,null,null,[7,5],null,[null,[null,1],[[["3"]]]]]]`
 
-func (c *Client) SubscribeRealtimeChannel(ctx context.Context) (string, *gvproto.WebChannelSession, error) {
+func watchRequest(id, watchType, since string) string {
+	return fmt.Sprintf(`[[["%s",[%s,null,null,[7,5],null,[null,[null,1],[[["%s"]]]],null,1,2],null,3]]]`, id, since, watchType)
+}
+
+func (c *Client) SubscribeRealtimeChannel(ctx context.Context, sinceMicros uint64) (string, *gvproto.WebChannelSession, error) {
+	since := "null"
+	if sinceMicros != 0 {
+		since = strconv.FormatUint(sinceMicros, 10)
+	}
 	chooseServerResp, err := ReadProtoResponse[*gvproto.RespChooseServer](
 		c.MakeRequest(ctx, http.MethodPost, EndpointRealtimeChooseServer, nil, http.Header{
 			"Content-Type": {ContentTypePBLite},
@@ -60,16 +68,15 @@ func (c *Client) SubscribeRealtimeChannel(ctx context.Context) (string, *gvproto
 		"X-WebChannel-Content-Type": {ContentTypePBLite},
 	}
 	body := url.Values{
-		"count": {"7"},
-		"ofs":   {"0"},
-		// TODO the first null could be current timestamp as microseconds?
-		"req0___data__": {`[[["1",[null,null,null,[7,5],null,[null,[null,1],[[["2"]]]],null,1,2],null,3]]]`},
-		"req1___data__": {`[[["2",[null,null,null,[7,5],null,[null,[null,1],[[["3"]]]],null,1,2],null,3]]]`},
-		"req2___data__": {`[[["3",[null,null,null,[7,5],null,[null,[null,1],[[["3"]]]],null,1,2],null,3]]]`},
-		"req3___data__": {`[[["4",[null,null,null,[7,5],null,[null,[null,1],[[["1"]]]],null,1,2],null,3]]]`},
-		"req4___data__": {`[[["5",[null,null,null,[7,5],null,[null,[null,1],[[["1"]]]],null,1,2],null,3]]]`},
-		"req5___data__": {`[[["6",[null,null,null,[7,5],null,[null,[null,1],[[["1"]]]],null,1,2],null,3]]]`},
-		"req6___data__": {`[[["9",[null,null,null,[7,5],null,[null,[null,1],[[["1"]]]],null,1,2],null,3]]]`},
+		"count":         {"7"},
+		"ofs":           {"0"},
+		"req0___data__": {watchRequest("1", "2", since)},
+		"req1___data__": {watchRequest("2", "3", since)},
+		"req2___data__": {watchRequest("3", "3", since)},
+		"req3___data__": {watchRequest("4", "1", since)},
+		"req4___data__": {watchRequest("5", "1", since)},
+		"req5___data__": {watchRequest("6", "1", since)},
+		"req6___data__": {watchRequest("9", "1", since)},
 	}
 	createChannelResp, err := ReadProtoResponse[*gvproto.RespCreateChannel](
 		c.MakeRequest(ctx, http.MethodPost, EndpointRealtimeChannel, query, extraHeaders, body),
@@ -87,19 +94,19 @@ var noopSuffix = []byte(`,["noop"]]`)
 const ForceResubscribeInterval = 1 * time.Hour
 
 func (c *Client) RunRealtimeChannel(ctx context.Context) error {
-	gSessionID, channel, err := c.SubscribeRealtimeChannel(ctx)
+	gSessionID, channel, err := c.SubscribeRealtimeChannel(ctx, 0)
 	if err != nil {
 		return err
 	}
 	lastResubscribe := time.Now()
 	log := zerolog.Ctx(ctx)
-	var ackID uint64
+	var ackID, lastHeartbeat uint64
 	failedRequests := 0
 	connected := false
 	for {
 		if time.Since(lastResubscribe) > ForceResubscribeInterval {
 			log.Debug().Msg("Forcing re-subscribe as channel has been alive for too long")
-			gSessionID, channel, err = c.SubscribeRealtimeChannel(ctx)
+			gSessionID, channel, err = c.SubscribeRealtimeChannel(ctx, lastHeartbeat)
 			if err != nil {
 				return fmt.Errorf("failed to re-subscribe after timeout: %w", err)
 			}
@@ -137,7 +144,7 @@ func (c *Client) RunRealtimeChannel(ctx context.Context) error {
 					return ctx.Err()
 				case <-time.After(sleep):
 				}
-				gSessionID, channel, err = c.SubscribeRealtimeChannel(ctx)
+				gSessionID, channel, err = c.SubscribeRealtimeChannel(ctx, lastHeartbeat)
 				if err != nil {
 					return fmt.Errorf("failed to re-subscribe after unknown SID: %w", err)
 				}
@@ -203,6 +210,13 @@ func (c *Client) RunRealtimeChannel(ctx context.Context) error {
 						reconnect = true
 						continue
 					}
+					for _, wrapper := range parsed.GetDataWrapper() {
+						for _, data := range wrapper.GetData() {
+							if ts, err := strconv.ParseUint(data.GetEvent().GetSub3().GetUnknownTimestamp(), 10, 64); err == nil {
+								lastHeartbeat = ts
+							}
+						}
+					}
 					ackID = parsed.ArrayID
 					c.dispatchEvent(ctx, &RealtimeEvent{WebChannelEvent: &parsed})
 				}
@@ -211,7 +225,7 @@ func (c *Client) RunRealtimeChannel(ctx context.Context) error {
 			if reconnect {
 				_ = resp.Body.Close()
 				log.Debug().Msg("Got event that probably means we need to reconnect")
-				gSessionID, channel, err = c.SubscribeRealtimeChannel(ctx)
+				gSessionID, channel, err = c.SubscribeRealtimeChannel(ctx, lastHeartbeat)
 				if err != nil {
 					return fmt.Errorf("failed to re-subscribe after timeout: %w", err)
 				}
