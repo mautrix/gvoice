@@ -207,7 +207,7 @@ func (gc *GVClient) HandleMatrixMessageRemove(ctx context.Context, msg *bridgev2
 	if err != nil {
 		zerolog.Ctx(ctx).Err(err).Msg("Failed to get other parts of deleted message")
 	} else if len(parts) > 1 {
-		go gc.Main.Bridge.QueueRemoteEvent(gc.UserLogin, &simplevent.MessageRemove{
+		go gc.UserLogin.QueueRemoteEvent(&simplevent.MessageRemove{
 			EventMeta: simplevent.EventMeta{
 				Type:      bridgev2.RemoteEventMessageRemove,
 				PortalKey: msg.Portal.PortalKey,
