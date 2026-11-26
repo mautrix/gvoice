@@ -18,17 +18,18 @@ package libgv
 
 import (
 	"net/url"
+	"strings"
 )
 
-const UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
-const CHUserAgent = `"Chromium";v="128", "Not;A=Brand";v="24", "Google Chrome";v="128"`
+const UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36"
+const CHUserAgent = `"Not-A.Brand";v="99", "Google Chrome";v="157", "Chromium";v="157"`
 const CHPlatform = `"Linux"`
-const ClientVersion = "665865172"
+const ClientVersion = "1024675141"
 const JavaScriptUserAgent = "google-api-javascript-client/1.1.0"
 const WaaXUserAgent = "grpc-web-javascript/0.1"
 
 var ClientDetails = url.Values{
-	"appVersion": {"5.0 (X11)"},
+	"appVersion": {strings.TrimPrefix(UserAgent, "Mozilla/")},
 	"platform":   {"Linux x86_64"},
 	"userAgent":  {UserAgent},
 }.Encode()
@@ -38,6 +39,7 @@ const (
 	ContentTypePBLite    = "application/json+protobuf"
 	ContentTypeFormData  = "application/x-www-form-urlencoded"
 	ContentTypePlainText = "text/plain"
+	ContentTypeJSON      = "application/json"
 )
 
 const (
@@ -55,6 +57,7 @@ const (
 	ContactsDomain = "peoplestack-pa." + APIDomain
 	UploadDomain   = "docs.google.com"
 	WaaDomain      = "waa-pa." + APIDomain
+	AccountsDomain = "accounts.google.com"
 
 	APIBaseURL                    = "https://" + APIDomain + "/voice/v1/voiceclient"
 	EndpointGetAccount            = APIBaseURL + "/account/get"
@@ -73,10 +76,11 @@ const (
 	EndpointRealtimeChannel      = RealtimeBaseURL + "/punctual/multi-watch/channel"
 	EndpointRealtimeChooseServer = RealtimeBaseURL + "/punctual/v1/chooseServer"
 
-	EndpointUpload                = "https://" + UploadDomain + "/upload/photos/resumable"
-	EndpointDownloadTemplate      = "https://voice.google.com/u/%s/a/i/%s"
-	EndpointDownloadVideoTemplate = "https://voice.google.com/u/%s/a/vi/%s"
-	EndpointDownloadAudioTemplate = "https://voice.google.com/u/%s/a/au/%s"
+	EndpointUpload                    = "https://" + UploadDomain + "/upload/photos/resumable"
+	EndpointDownloadTemplate          = "https://voice.google.com/u/%s/a/i/%s"
+	EndpointDownloadVideoTemplate     = "https://voice.google.com/u/%s/a/vi/%s"
+	EndpointDownloadAudioTemplate     = "https://voice.google.com/u/%s/a/au/%s"
+	EndpointDownloadVoicemailTemplate = "https://voice.google.com/u/%s/a/v/%s"
 
 	ContactsBaseURL              = "https://" + ContactsDomain + "/$rpc/peoplestack.PeopleStackAutocompleteService"
 	EndpointAutocompleteContacts = ContactsBaseURL + "/Autocomplete"
@@ -85,4 +89,7 @@ const (
 	WaaBaseURL        = "https://" + WaaDomain + "/$rpc/google.internal.waa.v1.Waa"
 	EndpointCreateWaa = WaaBaseURL + "/Create"
 	EndpointPingWaa   = WaaBaseURL + "/Ping"
+
+	EndpointRotateCookies = "https://" + AccountsDomain + "/RotateCookies"
+	RotateCookiesReferer  = "https://" + AccountsDomain + "/RotateCookiesPage?og_pid=72&rot=3&origin=https%3A%2F%2Fvoice.google.com&exp_id=0"
 )

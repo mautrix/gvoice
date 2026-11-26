@@ -37,6 +37,8 @@ type Client struct {
 	HTTP     *http.Client
 	AuthUser string
 
+	lpHTTP *http.Client
+
 	EventHandler func(context.Context, any)
 
 	cookies     map[string]string
@@ -46,6 +48,7 @@ type Client struct {
 func NewClient(cookies map[string]string) *Client {
 	return &Client{
 		HTTP:     &http.Client{Timeout: 120 * time.Second},
+		lpHTTP:   &http.Client{Timeout: 5 * time.Minute},
 		cookies:  maps.Clone(cookies),
 		AuthUser: "0",
 	}
@@ -93,6 +96,17 @@ func (c *Client) GetAccount(ctx context.Context) (*gvproto.RespGetAccount, error
 			UnknownInt2: 1,
 		}),
 	)
+}
+
+func (c *Client) RotateCookies(ctx context.Context) error {
+	resp, err := c.MakeRequest(ctx, http.MethodPost, EndpointRotateCookies, nil, http.Header{
+		"Content-Type": {ContentTypeJSON},
+	}, fmt.Sprintf(`[72,"%d"]`, rand.Int64()))
+	if err != nil {
+		return err
+	}
+	_ = resp.Body.Close()
+	return nil
 }
 
 func (c *Client) RegisterPushNotifications(ctx context.Context, deviceID, token string) error {
@@ -199,6 +213,18 @@ func (c *Client) DownloadAttachment(ctx context.Context, mediaID string, mediaTy
 	}
 	var resp *http.Response
 	resp, err = c.MakeRequest(ctx, http.MethodGet, addr, query, nil, nil)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+	mime = resp.Header.Get("Content-Type")
+	data, err = io.ReadAll(resp.Body)
+	return
+}
+
+func (c *Client) DownloadVoicemail(ctx context.Context, messageID string) (data []byte, mime string, err error) {
+	var resp *http.Response
+	resp, err = c.MakeRequest(ctx, http.MethodGet, fmt.Sprintf(EndpointDownloadVoicemailTemplate, c.AuthUser, messageID), nil, nil, nil)
 	if err != nil {
 		return
 	}
