@@ -36,6 +36,7 @@ import (
 	"go.mau.fi/util/pblite"
 	"google.golang.org/protobuf/proto"
 
+	"go.mau.fi/mautrix-gvoice/pkg/libgv/gvproto"
 	"go.mau.fi/mautrix-gvoice/pkg/libgv/utf16chunk"
 )
 
@@ -51,7 +52,9 @@ func (c *Client) prepareHeaders(req *http.Request) {
 	req.Header.Set("Sec-Ch-Ua-Platform", CHPlatform)
 	req.Header.Set("Sec-Ch-Ua-Mobile", "?0")
 	req.Header.Set("User-Agent", UserAgent)
-	req.Header.Set("X-Goog-AuthUser", c.AuthUser)
+	if req.URL.Host != AccountsDomain {
+		req.Header.Set("X-Goog-AuthUser", c.AuthUser)
+	}
 	if req.URL.Host == APIDomain {
 		req.Header.Set("X-Client-Version", ClientVersion)
 		req.Header.Set("X-ClientDetails", ClientDetails)
@@ -68,7 +71,11 @@ func (c *Client) prepareHeaders(req *http.Request) {
 		req.Header.Set("X-User-Agent", WaaXUserAgent)
 	}
 	req.Header.Set("Sec-Fetch-Dest", "empty")
-	req.Header.Set("Sec-Fetch-Mode", "cors")
+	if req.URL.Host == AccountsDomain {
+		req.Header.Set("Sec-Fetch-Mode", "same-origin")
+	} else {
+		req.Header.Set("Sec-Fetch-Mode", "cors")
+	}
 	if strings.HasSuffix(req.URL.Host, "."+APIDomain) {
 		req.Header.Set("Sec-Fetch-Site", "same-site")
 	} else {
@@ -79,6 +86,9 @@ func (c *Client) prepareHeaders(req *http.Request) {
 	if req.URL.Host == UploadDomain {
 		req.Header.Set("Origin", "https://"+UploadDomain)
 		req.Header.Set("Referer", "https://"+UploadDomain+"/")
+	} else if req.URL.Host == AccountsDomain {
+		req.Header.Set("Origin", "https://"+AccountsDomain)
+		req.Header.Set("Referer", RotateCookiesReferer)
 	} else {
 		req.Header.Set("Origin", Origin)
 		req.Header.Set("Referer", Origin+"/")
@@ -90,7 +100,7 @@ func (c *Client) prepareHeaders(req *http.Request) {
 			Name:  name,
 			Value: value,
 		})
-		if name == "SAPISID" {
+		if name == "SAPISID" && req.URL.Host != AccountsDomain {
 			req.Header.Set("Authorization", SAPISIDHash(Origin, value))
 		}
 	}
@@ -103,13 +113,32 @@ var (
 )
 
 type ResponseError struct {
-	Req  *http.Request
-	Resp *http.Response
-	Body []byte
+	Req        *http.Request
+	Resp       *http.Response
+	Body       []byte
+	VoiceError *gvproto.VoiceError
 }
 
 func (re *ResponseError) Error() string {
+	if re.VoiceError != nil {
+		return fmt.Sprintf("unexpected status code %d (voice error %s)", re.Resp.StatusCode, re.VoiceError.GetCode())
+	}
 	return fmt.Sprintf("unexpected status code %d", re.Resp.StatusCode)
+}
+
+func parseVoiceError(body []byte) *gvproto.VoiceError {
+	jsonData, ok := bytes.CutPrefix(body, []byte("voice_error: "))
+	if !ok {
+		return nil
+	}
+	var wrapper struct {
+		Base64Format []byte `json:"base64_format"`
+	}
+	var voiceErr gvproto.VoiceError
+	if json.Unmarshal(jsonData, &wrapper) != nil || proto.Unmarshal(wrapper.Base64Format, &voiceErr) != nil {
+		return nil
+	}
+	return &voiceErr
 }
 
 func (re *ResponseError) IsAuthError() bool {
@@ -129,7 +158,7 @@ func IsAuthError(err error) bool {
 	return false
 }
 
-const MaxRetryCount = 10
+const MaxRetryCount = 2
 
 func (c *Client) MakeRequest(ctx context.Context, method, baseAddr string, query url.Values, headers http.Header, body any) (*http.Response, error) {
 	parsedAddr, err := url.Parse(baseAddr)
@@ -195,7 +224,7 @@ func (c *Client) MakeRequest(ctx context.Context, method, baseAddr string, query
 		if err != nil || resp.StatusCode >= 400 {
 			if (err != nil && !exhttp.IsNetworkError(err)) ||
 				(resp != nil && resp.StatusCode < 500) ||
-				retryCount > MaxRetryCount {
+				retryCount >= MaxRetryCount {
 				return nil, c.logRequestFail(ctx, parsedAddr, req, resp, err, retryCount, 0)
 			}
 			retryCount++
@@ -239,11 +268,15 @@ func (c *Client) makeRequestDirect(ctx context.Context, method string, parsedAdd
 	}
 	req.Header = headers.Clone()
 	c.prepareHeaders(req)
-	resp, err := c.HTTP.Do(req)
+	httpClient := c.HTTP
+	if method == http.MethodGet && parsedAddr.Host == RealtimeDomain {
+		httpClient = c.lpHTTP
+	}
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return req, nil, fmt.Errorf("failed to send request: %w", err)
 	}
-	if strings.HasSuffix(parsedAddr.Host, APIDomain) {
+	if strings.HasSuffix(parsedAddr.Host, APIDomain) || parsedAddr.Host == AccountsDomain {
 		c.updateCookies(ctx, resp)
 	}
 	return req, resp, nil
@@ -254,11 +287,16 @@ func (c *Client) logRequestFail(ctx context.Context, addr *url.URL, req *http.Re
 		Stringer("request_url", addr).
 		Int("retry_count", retryCount)
 	var data []byte
+	var voiceErr *gvproto.VoiceError
 	if resp != nil {
 		data, _ = io.ReadAll(resp.Body)
 		_ = resp.Body.Close()
+		voiceErr = parseVoiceError(data)
 		logEvt.
 			Int("status_code", resp.StatusCode)
+		if voiceErr != nil {
+			logEvt.Stringer("voice_error", voiceErr.GetCode())
+		}
 		if zerolog.Ctx(ctx).GetLevel() == zerolog.TraceLevel {
 			if json.Valid(data) {
 				logEvt.RawJSON("response_json", data)
@@ -280,9 +318,10 @@ func (c *Client) logRequestFail(ctx context.Context, addr *url.URL, req *http.Re
 		return err
 	}
 	return &ResponseError{
-		Req:  req,
-		Resp: resp,
-		Body: data,
+		Req:        req,
+		Resp:       resp,
+		Body:       data,
+		VoiceError: voiceErr,
 	}
 }
 
