@@ -305,7 +305,14 @@ func (gc *GVClient) syncOlderThreads(ctx context.Context, firstPage *gvproto.Res
 		meta.ThreadSyncCount = len(firstPage.Threads)
 		meta.ThreadSyncToken = firstPage.PaginationToken
 	}
-	for meta.ThreadSyncToken != "" && (limit < 0 || meta.ThreadSyncCount < limit) {
+	for first := true; meta.ThreadSyncToken != "" && (limit < 0 || meta.ThreadSyncCount < limit); first = false {
+		if !first {
+			select {
+			case <-time.After(gc.Main.Config.ThreadSyncPageDelay):
+			case <-ctx.Done():
+				return
+			}
+		}
 		page, err := gc.Client.ListThreads(ctx, gvproto.ThreadFolder_ALL_THREADS, meta.ThreadSyncToken, "")
 		if err != nil {
 			log.Err(err).Msg("Failed to list older threads")
