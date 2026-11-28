@@ -80,6 +80,7 @@ const (
 	EndpointDownloadVideoTemplate     = "https://voice.google.com/u/%s/a/vi/%s"
 	EndpointDownloadAudioTemplate     = "https://voice.google.com/u/%s/a/au/%s"
 	EndpointDownloadVoicemailTemplate = "https://voice.google.com/u/%s/a/v/%s"
+	EndpointDownloadVCardTemplate     = "https://voice.google.com/u/%s/a/vc/%s"
 
 	ContactsBaseURL              = "https://" + ContactsDomain + "/$rpc/peoplestack.PeopleStackAutocompleteService"
 	EndpointAutocompleteContacts = ContactsBaseURL + "/Autocomplete"

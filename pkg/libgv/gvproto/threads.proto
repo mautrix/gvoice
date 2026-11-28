@@ -130,6 +130,7 @@ message Attachment {
         AUDIO = 1;
         VIDEO = 2;
         PHOTO = 3;
+        VCARD = 4;
     }
 
     message Metadata {
@@ -146,11 +147,27 @@ message Attachment {
         int32 height = 3;
     }
 
+    message Duration {
+        int64 seconds = 1;
+        int32 nanos = 2;
+    }
+
+    message AudioInfo {
+        Duration duration = 1;
+    }
+
+    message VideoInfo {
+        Duration duration = 1;
+        repeated Metadata metadata = 3;
+    }
+
     string mimeType = 1;
     string ID = 2;
     Status status = 3;
     repeated Metadata metadata = 4;
     MediaType mediaType = 5;
+    AudioInfo audioInfo = 6;
+    VideoInfo videoInfo = 7;
 }
 
 message Contact {

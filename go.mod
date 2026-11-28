@@ -7,6 +7,7 @@ toolchain go1.27.4
 tool go.mau.fi/util/cmd/maubuild
 
 require (
+	github.com/emersion/go-vcard v0.0.0-20241024213814-c9703dde27ff
 	github.com/google/uuid v1.6.0
 	github.com/rs/zerolog v1.35.1
 	github.com/stretchr/testify v1.12.0

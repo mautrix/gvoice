@@ -197,6 +197,8 @@ func (c *Client) DownloadAttachment(ctx context.Context, mediaID string, mediaTy
 		query = url.Values{"m": {"content"}}
 	case gvproto.Attachment_AUDIO:
 		addr = fmt.Sprintf(EndpointDownloadAudioTemplate, c.AuthUser, mediaID)
+	case gvproto.Attachment_VCARD:
+		addr = fmt.Sprintf(EndpointDownloadVCardTemplate, c.AuthUser, mediaID)
 	default:
 		addr = fmt.Sprintf(EndpointDownloadTemplate, c.AuthUser, mediaID)
 		query = url.Values{"s": {strconv.Itoa(int(gvproto.Attachment_Metadata_ORIGINAL))}}
