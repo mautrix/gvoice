@@ -70,6 +70,7 @@ const (
 	EndpointBatchUpdateAttributes = APIBaseURL + "/thread/batchupdateattributes"
 	EndpointMarkAllRead           = APIBaseURL + "/thread/markallread"
 	EndpointDeleteThread          = APIBaseURL + "/thread/delete"
+	EndpointDeleteMessages        = APIBaseURL + "/threaditem/batchdelete"
 
 	RealtimeBaseURL              = "https://" + RealtimeDomain
 	EndpointRealtimeChannel      = RealtimeBaseURL + "/punctual/multi-watch/channel"
